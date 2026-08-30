@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
 
+# DSH harness runtime
+.dsh/
+
 # Python / orchestrator
 __pycache__/
 *.pyc
