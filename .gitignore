@@ -1,0 +1,33 @@
+# macOS
+.DS_Store
+
+# Python / orchestrator
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.orchestrator-ui/
+
+# Node
+node_modules/
+
+# Logs
+*.log
+.logs/
+
+# UE generated / build
+DerivedDataCache/
+Intermediate/
+Binaries/
+Saved/
+*.sln
+.vscode/
+
+# IDE
+.idea/
+*.iml
+
+# OS / editor
+*.swp
+*~
