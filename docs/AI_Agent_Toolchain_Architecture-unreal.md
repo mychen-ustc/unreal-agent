@@ -8,7 +8,7 @@
 
 这套架构的核心不是"用 AI 写代码"，而是用开放标准（MCP）加自研编排，把一系列 AI Agent 组成一支可治理、可验证、可回滚的工程团队。UE 在这里是被驱动的执行引擎，不是把人锁住的平台。
 
-投入重点在两层：L2（自研 Toolset）和 L4（编排与治理）。这两层全部源码自研，不绑定任何模型供应商，UE6 迁移时可以平滑复用。L3 的 20 个领域 Agent 覆盖从市场调研到打包发布的完整工业管线。
+投入重点在两层：L2（自研 Toolset）和 L4（编排与治理）。这两层全部源码自研，不绑定任何模型供应商，UE6 迁移时可以平滑复用。L3 的 33 个领域与评估 Agent 覆盖从市场调研到打包发布及上线后复盘再开发的完整工业管线。
 
 ---
 
@@ -63,12 +63,12 @@ Generation → Compile → Run → Screenshot → Fix。Agent 每次改动之后
 │  L4  自研 Orchestrator（编排 + 治理）                         │
 │  依赖 DAG 引擎 / Reviewer / QA                                │
 ├─────────────────────────────────────────────────────────────┤
-│  L3  领域智能体层（20 个 Agent）                              │
+│  L3  领域智能体层（33 个 Agent：生产 + 评估）                 │
 │  预生产组 / 生产组 / 验证与交付组                              │
 │  统一通过 MCP 协议调用工具，模型可随时替换                     │
 ├─────────────────────────────────────────────────────────────┤
 │  L2  MCP 工具平面（Toolset Registry）                         │
-│  10 个自研 Toolset + 内置 Toolsets + File Sandbox + 审批门禁   │
+│  12 个自研 Toolset + 内置 Toolsets + File Sandbox + 审批门禁   │
 ├─────────────────────────────────────────────────────────────┤
 │  L1  Unreal Engine 5.8（完整源码 + 可重编译）                 │
 │  Editor / PCG / Nanite / Lumen / Verse / Source Control       │
@@ -84,7 +84,7 @@ graph TB
         QA["QA"]
         DAG["依赖 DAG 引擎"]
     end
-    subgraph L3["L3 · 领域智能体（20 个 Agent）"]
+    subgraph L3["L3 · 领域智能体（33 个：生产 + 评估）"]
         subgraph Strategy["策略与研究组"]
             S1["S1 Market Analyst"]
             S2["S2 Competitive Intel"]
@@ -161,7 +161,9 @@ graph TB
 
 ## 2. 领域智能体设计
 
-AutoUE（ACL'26 Findings）用 5 个 Agent 跑通了端到端生成 3D 游戏的流程，证明这条路可行。我们在这个基础上，对照工业游戏管线的实际环节，扩展到了 20 个 Agent，按生产阶段分成四组。Agent 之间不传自然语言，只传结构化的 JSON 规格（SharedState）。
+AutoUE（ACL'26 Findings）用 5 个 Agent 跑通了端到端生成 3D 游戏的流程，证明这条路可行。我们在这个基础上，对照工业游戏管线的实际环节，扩展到 **33 个 Agent**，按生产阶段分组。Agent 之间不传自然语言，只传结构化的 JSON 规格（SharedState）。
+
+> 生产型 Agent（策略 S1–S6 / 预生产 / 生产 / 验证与交付）负责把游戏做出来；**评估型 Agent**（体验评估 E1–E6 + UX/Playtest 研究者 + 叙事内容 W1 + 技术美术 TA）负责批判性地找出问题、保证品质与商业可行。评估不是交付末尾的一次性检查，而是可在任意里程碑触发的反馈闭环，且与生产的读写严格分离。
 
 ### 2.1 策略与研究组（Strategy & Research）
 
@@ -200,8 +202,14 @@ AutoUE（ACL'26 Findings）用 5 个 Agent 跑通了端到端生成 3D 游戏的
 | ② Concept Artist | GDD 美术描述 | 风格指南 + 参考图 + 视觉规范 | 外部图像生成 API | P2 |
 | ③ Level Designer | GDD + 风格指南 | Blockout 规格（动线/POI/空间分区/节奏曲线） | python_execute, Blockout Toolset | P1 |
 | ④ Data Agent | 玩法数值规格 | CSV → DataTable 资产 | Data Toolset | P2 |
+| W1 Writer | GDD + 世界观 | 剧情/对话/情境文本 + 文案资产 | LLM + 叙事模板 RAG | P2 |
+| ND System / Numerical Designer | GDD + 玩法方案 | 成长曲线 / 资源经验产出 / 战斗数值平衡 / 经济回收规格 | LLM + 数值设计理论 RAG + 平衡仿真 | P1 |
 
-Director 把用户的一句话需求展开成结构化的 GDD 和任务清单。Concept Artist 先确定关卡的视觉基调——色调、材质语言、光照 mood——后面所有资产生成都绑在这个风格指南上。Level Designer 在 PCG 铺场景之前，先用简单几何体拉出灰盒：玩家从哪进、经过哪、在哪高潮、从哪出，动线节奏是什么样的。Data Agent 管数值——收集品计数、触发条件、敌人参数——全部走 CSV 进 DataTable，不散落在代码里。
+Director 把用户的一句话需求展开成结构化的 GDD 和任务清单。Concept Artist 先确定关卡的视觉基调——色调、材质语言、光照 mood——后面所有资产生成都绑在这个风格指南上。Level Designer 在 PCG 铺场景之前，先用简单几何体拉出灰盒：玩家从哪进、经过哪、在哪高潮、从哪出，动线节奏是什么样的。Data Agent 管数值的**落地**——收集品计数、触发条件、敌人参数——全部走 CSV 进 DataTable，不散落在代码里。W1 Writer 承接 GDD 和世界观框架，产出带命名的剧情片段、人物对白、情境描述和可读文案（任务目标、物品说明、关卡内提示），以结构化文本资产供 Gameplay / UI / Audio 引用。
+
+**ND System / Numerical Designer 与 ④ Data Agent 的分工**：④ 是"数值的录入与资产化"（把已定好的规格写成 CSV、建 DataTable）；ND 才是"数值/经济的设计决策者"——负责成长曲线、经验/资源产出速率、战斗数值平衡（伤害/血量/难度梯度）、经济回收。两者职责不同，不可混用：ND 产出数值设计规格（喂给 Gameplay、敌人/Boss 设计），④ 负责把它落地成引擎可读的 DataTable。
+
+**垂直切片 / 玩法原型阶段**：正式全量生产前，预生产组必须经历一轮**垂直切片（Vertical Slice）**——由 Director 从 GDD 裁出一段最小的核心玩法循环（一个可玩区块：探索→收集→解谜→战斗），让 ⑥ Scene/PCG、⑨ Gameplay、角色类 Agent、数值设计先把它做到"手感成立"。垂直切片是玩法风险对冲：在此阶段验证"核心循环真的好玩"、技术可行、艺术基调成立，通过后才进入全量生产；否则带着结论回退调整再切片。这是对标大厂"prototype / greenlight / vertical-slice gate"的关键前期环节，避免全量内容做完才暴露核心玩法无趣。
 
 ### 2.3 生产组
 
@@ -213,11 +221,22 @@ Director 把用户的一句话需求展开成结构化的 GDD 和任务清单。
 | ⑥ Scene/PCG | Blockout + 资产引用 + 风格指南 | PCG 图 + 生成脚本 + 截图 | PCG Toolset, python_execute | P1 |
 | ⑦ 3D Asset Generator | 风格指南 + 资产规格 | 纹理/网格/材质（外部模型，在风格约束下生成） | 外部生成 API + ArtPipeline Toolset | P3 |
 | ⑧ Lighting | PCG 场景 + 风格指南 | 光源放置 + PostProcess Volume | Lighting Toolset | P1 |
-| ⑨ Gameplay | 玩法规格 + Blockout + DataTable | Verse/C++ 模块 + 编译 | Build Toolset, 源码 | P2 |
+| ⑨ Gameplay | 玩法规格 + Blockout + DataTable + 文案 | Verse/C++ 模块 + 编译 | Build Toolset, 源码 | P2 |
 | ⑩ Audio | 场景描述 + 玩法规格 | 环境音 + SFX 放置 | Audio Toolset, 外部音频生成 API | P2 |
-| ⑪ UI | 玩法规格 + DataTable | UMG Widget（HUD/交互提示） | UI Toolset | P2 |
+| ⑪ UI | 玩法规格 + DataTable + 文案 | UMG Widget（HUD/交互提示） | UI Toolset | P2 |
+| TA Technical Artist | 风格指南 + 资产 | 主材质/shader/渲染规范 + 资产技术校验 + 性能优化建议 | ArtPipeline, Material Toolset, Profiler | P1 |
+| PC Player Character Designer | GDD + 风格指南 | 玩家角色设定（体感/动作风格/成长/手感 KPI） | LLM + 动作设计理论 RAG | P1 |
+| EB Enemy & Boss Designer | GDD + ND 数值规格 | 敌人/Boss 白皮书（行为/攻击模式/数值/难度曲线） | LLM + 竞品行为库 RAG | P1 |
+| AN Animation Agent | PC/EB 角色规格 + 风格指南 | 动作状态机 + 动画实现 + 外购动画质检（IK/locomotion） | 外部动画 API + ArtPipeline | P1 |
 
-Asset Retriever 先从 Fab、Quixel 和本地库里找现成资产，找不到的才交给 3D Asset Generator（P3 才接入外部生成模型）。Scene/PCG 拿到 Blockout 和资产引用之后，搭 PCG 图、触发生成、截图回传。Lighting 根据风格指南布光——主光源、局部补光、PostProcess Volume——然后截图跟 Concept Artist 的参考图比对。Gameplay 写 Verse 或 C++ 的交互逻辑和状态机，编译通过才算完。Audio 和 UI 是为可玩性服务的——没有音效和 HUD 的 Demo 不是完整的 Demo。
+Asset Retriever 先从 Fab、Quixel 和本地库里找现成资产，找不到的才交给 3D Asset Generator（P3 才接入外部生成模型）。Scene/PCG 拿到 Blockout 和资产引用之后，搭 PCG 图、触发生成、截图回传。Lighting 根据风格指南布光——主光源、局部补光、PostProcess Volume——然后截图跟 Concept Artist 的参考图比对。Gameplay 写 Verse 或 C++ 的交互逻辑和状态机，编译通过才算完。Audio 和 UI 是为可玩性服务的——没有音效和 HUD 的 Demo 不是完整的 Demo。TA Technical Artist 是"生产组的规范守护者"——搭主材质和 shader、定渲染规范（纹理尺寸/精度/LOD）、对生成资产做技术校验（三角面、UV、碰撞、Nanite 开关），并把 Profiler 报出来的超标点转化成具体的优化方案。
+
+**角色与动作是动作冒险游戏的主干，不能只有"能动的 Actor"**：
+- **PC Player Character Designer** 定义玩家角色的体感与动作风格——移动/跳跃/攀爬手感、招式节奏、成长方向，并给出可量化的**手感 KPI**（响应延迟、连招容错、位移手感），供 Gameplay/Animation 实现和 E 评估验收。
+- **EB Enemy & Boss Designer** 产出敌人与 Boss 的"白皮书"——行为模式、攻击套路、受击反馈、血量/难度曲线（对应 ND 的数值基线），避免敌人只有"巡逻/追击/攻击"三种状态。
+- **AN Animation Agent** 负责 Locomotion / IK / Animation Blueprint 状态机与外购动画的技术质检（骨骼对齐、根运动、通道），把外部生成的动作资产落入角色/敌人。
+
+这三者共同把玩家的**操控感和反馈感**做出来；否则 Demo 能跑能收集，但角色僵、战斗空。
 
 ### 2.4 验证与交付组
 
@@ -229,9 +248,26 @@ Asset Retriever 先从 Fab、Quixel 和本地库里找现成资产，找不到�
 | ⑬ Reviewer/QA | 全部产物 | 缺陷报告 + 评分 | Automation Test, Screenshot, Playtest | P2 |
 | ⑭ Build Agent | 通过评审的关卡 | 平台可执行包 | Build Toolset (UBT), Package Toolset | P3 |
 
-Profiler 跑一遍 GPU 和 CPU profiling，标出超标区域，反馈给 Scene 和 Lighting 做针对性优化。Reviewer 做代码审查、资产规范检查、PIE 自动化测试，最后给一个分数。评分低于 70 或者有 critical bug 就退回对应 Agent 重做。Build Agent 在 P3 才接入——前面的阶段都在 PIE 里验证，P3 才真打包。
+Profiler 跑一遍 GPU 和 CPU profiling，标出超标区域，反馈给 Scene 和 Lighting 做针对性优化。Reviewer 做**工程审验**——代码审查、资产规范检查、PIE 自动化测试，最后给一个分数。评分低于 70 或者有 critical bug 就退回对应 Agent 重做。Build Agent 在 P3 才接入——前面的阶段都在 PIE 里验证，P3 才真打包。
 
-### 2.5 Agent 间通信
+> **Reviewer 是全生命周期的工程审验；评估组（下一节）是站在用户/市场立场的批判审验。** 两者必须分开：Reviewer 验证"做没做对"（工程正确性），评估组验证"值不值得做、用户爱不爱、能否赚钱"（产品生死题）。回退阈值由"工程分 ∪ 体验分 ∪ 商业分"任一不达标触发。
+
+### 2.5 评估组（Evaluation）
+
+> 这是与"生产/工程评审"解耦的**用户立场批判层**。前端承诺的 8 个"评估型 Agent"，除 W1（叙事内容评价）与 TA（技术美术评价）外，正式落地为 **E1–E6 六类**，全部**只读、`strong` 模型**、只写 `shared_state/eval/`，永远不写生产产物区——防止"被评估方污染评估方"，保持监督性。
+
+| Agent | 评估对象 | 批判视角 | 输入 → 输出 |
+|---|---|---|---|
+| E1 Experience Auditor | 关卡节奏 / 动线 / 挫败与成就感曲线 | 核心玩家的耐心与沉浸 | blockout + 播放录制 → 体验痛点清单（哪里无聊/卡顿/劝退） |
+| E2 Content Critic | 美术风格 / 场景氛围 / 音频一致性 / UI 可用性 | 视觉/听觉敏感用户 | 风格指南 + 截图 + 场景渲染 → 素材不符合预期的点 |
+| E3 Gameplay / Fun Auditor | 核心玩法循环 / 战斗手感 / 成长曲线 / 数值平衡 | 硬核玩家（对标《战神》《艾尔登法环》） | 玩法规格 + DataTable + 实机 → 机制无聊点 / 数值失衡 / 手感问题 |
+| E4 Design & Economy Judge | 关卡结构 / 解谜 / 收集奖惩 / 时间经济 | 进度导向玩家 | blockout + 数值 + 通关数据 → 关卡问题 / 收集鸡肋点 / 经济崩点 |
+| E5 Monetization & Market Fit | 定价 / 内容量 / 平台 / 回收模型 | 商人与发行视角 | business_model + S4 输出 → 内容量 vs 定价是否成立 |
+| E6 Benchmark & Horizontal | 与现有游戏的横向全维度对比 | 市场/测评博主视角 | S2 竞品矩阵 + S1 市场 + 实机产物 → 对照评分表 + 受欢迎度预测 + GO/NO-GO/PIVOT |
+
+配套的 UX / Playtest 研究者与评估用 Toolset（PlaytestToolset、BenchmarkToolset）、`eval/*` 数据契约和回退规则见 [技术设计](./AI_Agent_Game_Dev_TechDesign.md) §5.2 / §4.3。
+
+### 2.6 Agent 间通信
 
 所有 Agent 之间的交接走 SharedState——结构化的 JSON，附 Schema 约束。不传自由文本，因为自由文本不可靠、不可校验、不可追踪。
 
@@ -290,7 +326,7 @@ Scene Agent 给 Gameplay Agent 的交互物规格：
 }
 ```
 
-### 2.6 变更传播：上游改了，下游要知道
+### 2.7 变更传播：上游改了，下游要知道
 
 工业管线里最头疼的事：上游改了一个坐标，下游所有依赖这个坐标的产出都可能失效。传统做法靠人工通知，这里用 Orchestrator 的依赖 DAG 来自动处理。
 
@@ -376,7 +412,7 @@ class UMyPipelineToolset : public UToolsetDefinition {
 - 新增 UFUNCTION 需要完整重启编辑器；只改函数体可以用 Live Coding
 - 写完执行 `ModelContextProtocol.RefreshTools` 热刷新工具列表
 
-自研的 10 个 Toolset：
+自研的 12 个 Toolset：
 
 | Toolset | 职责 |
 |---|---|
@@ -390,6 +426,8 @@ class UMyPipelineToolset : public UToolsetDefinition {
 | UIToolset | 生成/修改 UMG Widget、绑定 DataTable |
 | DataToolset | CSV 导入、DataTable 资产创建、行数据校验 |
 | ProfilerToolset | 触发 GPU/CPU Profiler、解析 Unreal Insights 输出、生成超标报告 |
+| PlaytestToolset | 录制游玩轨迹 / 多参数回放 / 游玩指标 / 冒烟自证 |
+| BenchmarkToolset | 竞品/市场数据刷新与对齐（供横向对比与后验） |
 
 ### 3.3 安全与治理
 
@@ -519,9 +557,10 @@ Orchestrator 检测到 parent_hash 变了
 | P0 地基 | 1–4 周 | MCP 打通、首个 Toolset、安全体系 | Agent 能安全改关卡并回滚 |
 | P1 核心工具链 | 5–12 周 | PCG + Level Designer + Lighting + Asset Retrieval + Build/Test + RAG | Agent 能程序化生成场景并自动编译测试 |
 | P2 策略与研究 | 13–18 周 | S1–S6 Strategy & Research Agent 上线 | 模糊方向 → 自动生成含市场/竞品/玩法/商业/技术/创意的完整提案 |
-| P3 多智能体 | 19–30 周 | 20 个 Agent + Orchestrator + 依赖 DAG 联调 | 端到端流水线跑通，从提案到可玩关卡 |
-| P4 实战打磨 | 31–42 周 | 外部生成模型接入、质量控制、真实内容生产 | 完整关卡由 AI 驱动生成；人工介入率 < 20% |
+| P3 多智能体 | 19–30 周 | 33 个 Agent + Orchestrator + 依赖 DAG 联调；垂直切片；评估组 + 回退闭环 | 端到端流水线跑通，从提案经垂直切片到可玩关卡 |
+| P4 实战打磨 | 31–42 周 | 外部生成模型接入、质量控制、评估组上线、真实内容生产 | 完整关卡由 AI 驱动生成；评估组多画像批判 + 横向对标通过；人工介入率 < 20% |
 | P5 发布准备 | 43–52 周 | 优化、打磨、本地化、平台适配 | Steam/EGS 可提交包体 |
+| P5+ 运营与后验 | 上线后 | 后验评估（立项预测 vs 实际）、运营期平衡调整、二次开发 | 预测偏差写回长期记忆改进立项；热更新/平衡调整自动触发 |
 | P6 UE6 迁移 | 2027+ | Verse + Scene Graph 适配 | 逻辑迁 Verse，MCP 架构复用 |
 
 > 周期与 PRD §7 里程碑对齐。先在 disposable sandbox map 上验证 Agent，确认没问题了再进正式关卡。核心框架代码往 Verse 侧靠，为 UE6 做准备。PCG 和资源层天然可迁移，不用太担心。

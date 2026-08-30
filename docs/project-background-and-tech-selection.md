@@ -78,7 +78,7 @@ UE6 方面：5.8 是 UE5 时代最后一个大版本，作为 LTS 开项目正�
 
 ## 六、AI Agent 工具链架构
 
-完整的架构方案、14 个领域 Agent 设计、10 个 Toolset、PCG 策略、编排层和落地路线图，见架构文档：
+完整的架构方案、33 个领域与评估 Agent 设计、12 个 Toolset、PCG 策略、编排层和落地路线图，见架构文档：
 
 [AI_Agent_Toolchain_Architecture-unreal.md](./AI_Agent_Toolchain_Architecture-unreal.md)
 
@@ -89,9 +89,9 @@ UE6 方面：5.8 是 UE5 时代最后一个大版本，作为 LTS 开项目正�
 架构上的几个关键判断：
 
 - Agent 只生成构建脚本（PCG 图、Python 脚本、C++/Verse 代码、DataAsset），不直接捏造 .uasset。引擎确定性编译 → 可复现、可 diff、可版本管理
-- 自研 Toolset 是投入重点。Python 侧 `@toolset_registry.tool_call`，C++ 侧 `UFUNCTION(meta=(AICallable))`，共 10 个 Toolset 覆盖全管线
+- 自研 Toolset 是投入重点。Python 侧 `@toolset_registry.tool_call`，C++ 侧 `UFUNCTION(meta=(AICallable))`，共 12 个 Toolset 覆盖全管线（含评估用的 Playtest / Benchmark）
 - 治理层必须自研：File Sandbox、Risk 分级审批、Git 钩子、disposable sandbox map 验证
-- 14 个 Agent 覆盖工业全管线：预生产（Director / Concept Artist / Level Designer / Data）→ 生产（Asset / Scene / Lighting / Gameplay / Audio / UI / 3D Asset）→ 验证交付（Profiler / Reviewer / Build）
+- 33 个 Agent 覆盖工业全管线：策略与研究 → 预生产 → 生产（场景 / 角色 / 动画 / 数值 / Gameplay / Audio / UI / 3D Asset / Tech Art）→ 验证与交付 → 评估组
 
 ---
 

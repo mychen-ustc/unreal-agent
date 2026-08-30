@@ -65,7 +65,7 @@
 ├────────────────────────────────────────────────────────────┤
 │  L4  编排与治理层（Orchestrator · DAG · RAG · 记忆 · 模型路由）│
 ├────────────────────────────────────────────────────────────┤
-│  L3  领域智能体（20 个 Agent，按 SharedState Schema 通信）   │
+│  L3  领域智能体（33 个 Agent，按 SharedState Schema 通信）   │
 ├────────────────────────────────────────────────────────────┤
 │  L2  工具平面 Toolset（10 个，结构化 JSON 工具接口）         │
 ├────────────────────────────────────────────────────────────┤
@@ -128,7 +128,7 @@ CLI (Typer + Rich)              ← 运行入口：结构化 JSON 日志
    ▼
 LangGraph StateGraph            ← 编排：DAG + 回退循环 + Checkpoint
    │
-   ├─ Agent Runtime (asyncio)   ← 20 个领域 Agent
+   ├─ Agent Runtime (asyncio)   ← 33 个领域 / 评估 Agent
    │     │
    │     ├─ LiteLLM ──▶ Claude (Opus/Sonnet/Haiku)   ← 模型路由
    │     │
@@ -273,6 +273,8 @@ Orchestrator 更新 DAG / 触发下游 stale 传播
 | UIToolset | F-TOOL-01.8 | P2 | Python | `ui_create_umg_widget`、`ui_bind_datatable` |
 | DataToolset | F-TOOL-01.9 | P2 | Python | `data_csv_to_datatable`、`data_validate_rows` |
 | ProfilerToolset | F-TOOL-01.10 | P2 | C++ + Python | `profiler_capture_gpu`、`profiler_parse_insights`、`profiler_report` |
+| PlaytestToolset | F-TOOL-01.11 | P2 | Python | `playtest_record_session`、`playtest_replay`、`playtest_metrics`、`playtest_smoke` |
+| BenchmarkToolset | F-TOOL-01.12 | P2 | Python | `benchmark_refresh_competitors`、`benchmark_align`、`benchmark_report` |
 
 ### 4.2 公共规范
 
@@ -315,7 +317,32 @@ build_run_pie_tests(test_names)    → {passed, failed, screenshots: [path]}
 - 提供 `safeguard_check_path(path) → {allowed, zone}`、`safeguard_request_approval(tool, params, risk) → {approved}`。
 - 是所有写类 Tool 的前置依赖（AOP 式注入，避免每个 Tool 重复实现）。
 
+#### 4.3.4 PlaytestToolset（评估底座）
+
+```
+playtest_record_session(player_handle, bounds, duration_s, seed) → {clip_id}
+# 自动角色按某策略玩一段，录制状态/事件/截图帧（生成→游玩→收集轨迹的可重复实验）
+playtest_replay(clip_id, override_params={...})               → {trajectory, events, frames}
+# 用不同参数回放同一段轨迹（更快/更贪/更探索），供评估多视角批判
+playtest_metrics(clip_id, metrics=["deaths","pacing","pickups","time_gates"]) → {report}
+playtest_smoke(level_path, waypoints)                         → {reachable, blockers}
+# 自动走通 spawn→collect→open 最小路径（AutoUE Generation→Cruise→Replay 闭环），作为可玩性冒烟自证
+```
+
+- 驱动 PIE，输出可被 E1/E3/UX 消费的量化游玩数据；异步长任务走 §6.2.1 的外部任务句柄模式。
+
+#### 4.3.5 BenchmarkToolset（横向对标底座）
+
+```
+benchmark_refresh_competitors(genre, limit) → {matrix_version}
+benchmark_align(artifact_ref, competitor_key, axis) → {score, delta}
+benchmark_report(matrix, weights)          → {weighted_score, verdict, rationale}
+```
+
+- 负责竞品/市场数据的**定期刷新**（Steam 好评率趋势、评论极性、续作/品类热度），进 LanceDB 长期记忆，避免横向对标停留在立项当天。供 E6 与后验 Agent 消费。
+
 ---
+
 
 ## 5. L3 领域智能体
 
@@ -350,7 +377,7 @@ class DomainAgent(ABC):
 - **模型路由**：`fast` → Haiku/Flash（简单生成、格式化）；`strong` → Opus/Pro（设计、代码、评审）。配置驱动，可替换（PRD §4.1.3）。
 - **工具白名单**：每个 Agent 仅暴露所需 Tool，最小化权限（例：Market Analyst 只用 `project_list_directory` + RAG，无写权限）。
 
-### 5.2 20 个 Agent 实现映射
+### 5.2 Agent 实现映射
 
 **策略与研究组（S1–S6，PRD §4.1.3）**
 
@@ -371,6 +398,8 @@ class DomainAgent(ABC):
 | ② Concept Artist | `/art/style_guide.json` + 参考图 | 图像生成 API |
 | ③ Level Designer | `/level/blockout.json`（waypoints/zones/pacing） | `pcg_*`、`project_audit_assets` |
 | ④ Data Agent | `/data/*.csv` → DataTable | `data_csv_to_datatable` |
+| W1 Writer | `/narrative/*.json`（剧情/对白/情境/文案） | LLM + 叙事模板 RAG |
+| ND System / Numerical Designer | `/system_balance/*.json`（成长/产出/战斗数值/经济） | LLM + 数值设计理论 RAG + 平衡仿真 |
 
 **生产组（⑤–⑪）**
 
@@ -383,14 +412,30 @@ class DomainAgent(ABC):
 | ⑨ Gameplay | Verse/C++ 模块 | `build_live_coding`、代码生成 |
 | ⑩ Audio | 音效配置 | `audio_*` |
 | ⑪ UI | UMG Widget | `ui_create_umg_widget` |
+| TA Technical Artist | `/art/tech_spec.json` + 资产技术校验 | ArtPipeline、Material、`profiler_report` |
+| PC Player Character Designer | `/character/player.json`（体感/动作风格/手感 KPI） | LLM + 动作设计理论 RAG |
+| EB Enemy & Boss Designer | `/character/enemies/*.json`（行为/攻击/数值/难度） | LLM + 竞品行为库 RAG |
+| AN Animation Agent | `/character/animation/*.json`（状态机/校验结论） | 外部动画 API + ArtPipeline |
 
 **验证与交付组（⑫–⑭）**
 
 | Agent | 产出 | 关键 Tool |
 |---|---|---|
 | ⑫ Profiler | 超标报告 | `profiler_*` |
-| ⑬ Reviewer/QA | 评审 + 缺陷报告 | 代码审查 LLM、`build_run_pie_tests` |
+| ⑬ Reviewer/QA | 评审 + 缺陷报告（工程分） | 代码审查 LLM、`build_run_pie_tests` |
 | ⑭ Build Agent | 可执行包 | `build_cook_run` |
+
+**评估组（E1–E6 + UX，全部只读 `strong`，写 `eval/*`）**
+
+| Agent | 产出（SharedState 路径） | 关键 Tool / 数据源 |
+|---|---|---|
+| E1 Experience Auditor | `/eval/experience.json`（节奏/动线痛点） | `playtest_replay`、pacing_curve |
+| E2 Content Critic | `/eval/content.json`（风格/氛围/音频一致性） | 截图、场景渲染、风格指南比对 |
+| E3 Gameplay / Fun Auditor | `/eval/gameplay.json`（机制/手感/数值失衡） | `playtest_metrics`、DataTable |
+| E4 Design & Economy Judge | `/eval/design.json`（关卡/经济/收集鸡肋） | blockout、数值、通关数据 |
+| E5 Monetization & Market Fit | `/eval/monetization.json` | S4 输出、business_model |
+| E6 Benchmark & Horizontal | `/eval/benchmark.json`（横向对照 + 受欢迎度 + GO/NO-GO/PIVOT） | `benchmark_*`、S1/S2 数据 |
+| UX Playtest Researcher | `/eval/playtest_insights.json`（玩家卡点量化） | `playtest_record_session`、`playtest_replay` |
 
 ### 5.3 SharedState 契约
 
@@ -408,6 +453,33 @@ class DomainAgent(ABC):
 ```
 
 - **传播规则**：上游变更 → Orchestrator 标记下游 `stale`（深度 ≤ 3）→ 下游 Agent 拉取 diff → 决定是否重跑。禁止自由文本传递（PRD §4.1.3）。
+
+**评估命名空间 `eval/*`（与生产读写分离）**：
+
+评估组只读 `game/*`、`strategy/*` 等生产/策略区，**只写 `shared_state/eval/`**，永不回写生产产物区。评估结果不触发下游生产 `stale`（因为评估不产生被下游消费的生产变更）；它通过 Orchestrator 的**定向回退**把结论送回目标生产 Agent。`eval/*` 也在 Git 事实源内，可 diff、可回滚、可作为前后评估回归对比。
+
+评估报告统一信封（复用 §5.3 信封 + 增加评估专有字段）：
+
+```json
+{
+  "schema_version": "1.2.0",
+  "parent_hash": "sha256:gameplay-v3",
+  "producer": "E3_GameplayAudit",
+  "created_at": "ISO8601",
+  "audience": "hardcore",
+  "evaluated_artifacts": ["/game/gameplay/spec.json", "/game/data/balance.json"],
+  "axis_scores": { "fun_loop": 54, "combat_feel": 41, "growth": 38, "balance": 29 },
+  "critical_flaws": [
+    { "id": "F-017", "severity": "critical", "axis": "numerical", "desc": "后期成长曲线坡度不足", "link_back_to": "ND" }
+  ],
+  "recommendation": { "verdict": "FIX", "target": "ND", "reason": "数值失控将劝退玩家" }
+}
+```
+
+- `audience`：本份报告站位的用户画像（hardcore / casual / progress / visual / horror-vet）——实现"不同用户角度批判"。
+- `axis_scores` + 画像权重折算出综合"体验分 / 商业分"（0–100），供 §6.2 回退触发。
+- `critical_flaws[].link_back_to`：定位回退目标生产 Agent（Gameplay / PC / EB / ND / Scene / ③ Level Designer 等）。
+- `recommendation.verdict`：`FIX / GO / NO-GO / PIVOT`，`GO/NO-GO/PIVOT` 进人工审批卡点。
 
 ---
 
@@ -439,7 +511,7 @@ class DomainAgent(ABC):
 - **节点**：Agent 任务；**边**：`SharedState` 读写依赖（自动从 `shared_state_ref` 推导）。
 - **调度**：拓扑排序 + 优先队列；同一层可并发（受空间分区锁约束）。
 - **失效传播**：上游 `shared_state_delta` 提交后，BFS 标记下游 `stale`（深度 ≤ 3，PRD §4.1.3）；下游 Agent 被调度时先 `diff` 决定是否重跑，避免无效计算。
-- **回退循环**：Reviewer 评分 < 70 或含 critical bug → 定位责任 Agent → 重新入队（最多 3 次）→ 仍失败则升级人工。
+- **回退循环**：**工程分（⑬ Reviewer）、体验分与商业分（E1–E6）任一 < 70 或含 critical bug → 按报告的 `link_back_to` 定位责任 Agent → 重新入队（最多 3 次）→ 仍失败则升级人工**。评估组自身只读，不回写生产，避免评估引发无效重跑。
 
 #### 6.2.1 长时任务的执行模型（LangGraph 协调）
 
@@ -482,9 +554,10 @@ StateGraph 恢复该节点 → 读取结果 → 继续下游
 |---|---|---|---|
 | 短期 | 进程内 dict | 当前对话/任务上下文 | 任务生命周期 |
 | 工作记忆 | SharedState（Git） | Agent 间传递的结构化状态 | 项目生命周期 |
-| 长期（RAG） | **LanceDB**（嵌入式，`./memory/lancedb/`） | 已验证代码片段、风格指南、UE 官方文档片段、历史决策 | 永久 |
+| 长期（RAG） | **LanceDB**（嵌入式，`./memory/lancedb/`） | 已验证代码片段、风格指南、UE 官方文档片段、历史决策、**后验预测偏差、竞品/市场基线** | 永久 |
 
 - **LanceDB 选型理由**：嵌入式、零独立服务、数据与项目同目录（可 gitignore/备份）、列式存储 + 磁盘索引，大数据量下性能优于 ChromaDB；支持向量 + 全文 + 元数据混合检索，契合 UE API 符号+语义双索引需求（TDR-009）。
+- **后验与竞品基线**：立项时 E6 的横向预测（受欢迎分 + GO/NO-GO + 关键假设）存档；上线/内测后由**后验环节**逐条核对"预测 vs 实际"，把**预测偏差标注**写回长期记忆，修正下一次立项的市场基线与 E6 权重。BenchmarkToolset 定期刷新的竞品数据同样落此长期记忆（标注 `source + version + 采集时间`），避免横向对标停留在立项当天。
 - **索引结构**：每个文档带 `source + 版本 + chunk_type` 元数据；检索返回带 `score` 的结果片段，注入 Agent `context`。
 - **迁移**：通过 LangChain `VectorStore` 抽象接入；未来若需分布式可平滑换 Qdrant，仅改适配层。
 
@@ -624,13 +697,13 @@ repo/
 │   ├── cli.py                # CLI 入口（Typer）：run / plan / approve / rollback
 │   ├── dag.py                # 自研 DAG 引擎（依赖传播、stale、回退）
 │   ├── state_graph.py        # LangGraph StateGraph 组装（可替换适配层）
-│   ├── agents/                # 20 个领域 Agent
+│   ├── agents/                # 33 个领域 / 评估 Agent（生产 + 评估组分目录）
 │   ├── rag.py                # LanceDB 检索 + 注入
 │   ├── memory/                # LanceDB 持久化目录（gitignored）
 │   ├── models.py             # LiteLLM 封装 + 模型路由（fast/default/strong）
 │   ├── config/models.yaml    # 模型映射配置（TDR-010）
 │   └── mcp_client.py         # MCP Client（唯一写入者）
-├── shared_state/              # SharedState（Git 事实源）
+├── shared_state/              # SharedState（Git 事实源）game/ · strategy/ · eval/ · narrative/ · character/
 ├── .logs/trace.jsonl          # 结构化追踪日志（CLI 输出）
 ├── tests/                     # pytest + UE 自动化测试
 ├── docs/                      # PRD / 本设计文档 / ADR / TDR
@@ -698,6 +771,8 @@ push / PR
 - `tests/eval_cases/*.yaml` 存放 golden 用例（输入 + 期望产物特征），`evals/` 脚本批量跑。
 - evals 结果写入 `.logs/evals.jsonl`，纳入 CI。
 - **模型/工具链升级后强制跑 evals 回归**，防止"换模型后 GDD 质量下降"这类静默退化。
+
+> **评估组与 evals 的关系**：本节 evals 层评估的是"工具链/Agent 的产物质量"（程序正确性层）；§5.2 的评估组（E1–E6 + UX）评估的是"游戏本身值不值得做、用户爱不爱、能否赚钱"（产品层，产出 `eval/*` 报告，含体验分/商业分）。两者都进回退循环（§6.2，任一 < 70 触发）。**后验评估**在参考游戏内测/上线早期数据回落后触发：核对"E6 立项预测 vs 实际"，预测偏差写回 LanceDB（§6.4），作为后续立项与评估权重的训练基线。
 
 ### 10.3 指标（对接 PRD §5.1）
 
@@ -773,11 +848,16 @@ push / PR
 /Sandbox/               # 隔离验证 map
 /Engine/                # 只读（沙箱禁止）
 shared_state/           # SharedState JSON（Git 事实源）
-  /strategy/
-  /gdd/
-  /art/style_guide.json
-  /level/blockout.json
-  /data/
+  /strategy/             # 策略与研究（S1–S6）
+  /gdd/                  # Director GDD
+  /narrative/            # W1 叙事文案
+  /art/style_guide.json  # Concept Artist
+  /level/blockout.json   # Level Designer
+  /data/                 # Data Agent → DataTable
+  /system_balance/       # ND System/Numerical Designer
+  /character/            # 玩家角色 / 敌人 / Boss / 动画
+  /game/                 # Scene/Gameplay/Audio/UI 产物
+  /eval/                 # 评估组报告（E1–E6 + UX，只写此区）
 docs/                   # 设计文档
 ```
 
