@@ -106,7 +106,7 @@
 
 ### 4.1 AI Agent 工具链系统
 
-#### MCP 工具平面（L2）
+#### 4.1.1 MCP 工具平面（L2）
 
 基于 UE 5.8 MCP + Toolset Registry，构建 10 个自研 Toolset，提供 Agent 可发现、可调用的结构化工具接口。所有 Tool 返回结构化 JSON，函数静态无状态，一个 Tool 一个职责，失败不抛异常。
 
@@ -123,7 +123,7 @@
 | F-TOOL-01.9 DataToolset | CSV 导入、DataTable 资产创建、行数据校验 | P2 |
 | F-TOOL-01.10 ProfilerToolset | 触发 GPU/CPU Profiler、解析 Unreal Insights 输出、生成超标报告 | P2 |
 
-#### 安全与治理
+#### 4.1.2 安全与治理
 
 UE MCP 没有认证、串行执行、Agent 可能改错关卡或重复创建对象。需要自建安全层：
 
@@ -134,7 +134,7 @@ UE MCP 没有认证、串行执行、Agent 可能改错关卡或重复创建对�
 | F-TOOL-02.3 版本控制钩子 | Agent 每次改动后自动 commit + diff 报告，支持一键回滚 | P0 |
 | F-TOOL-02.4 超时与隔离 | Tool 调用 30s 超时；disposable sandbox map 做初次验证 | P0 |
 
-#### 领域智能体（L3）
+#### 4.1.3 领域智能体（L3）
 
 20 个角色专精 Agent，覆盖从市场调研到打包发布的完整工业管线，通过 SharedState（结构化 JSON）通信。按阶段分为四组。
 
@@ -184,7 +184,7 @@ UE MCP 没有认证、串行执行、Agent 可能改错关卡或重复创建对�
 
 Agent 间通信全部走 SharedState JSON Schema，不传自由文本。每条消息携带 `version`（semver）和 `parent_hash`（SHA-256）。Orchestrator 维护依赖 DAG，上游变更自动标记下游 stale，下游 diff 后决定是否重跑。传播深度限制在 3 层。多 Agent 并发写同一关卡时按坐标范围分区，共享区单独协调。
 
-#### 编排层（L4）
+#### 4.1.4 编排层（L4）
 
 技术选型推荐 LangGraph 或自研状态机，搭配 MCP Client。负责：
 
@@ -363,7 +363,7 @@ AI 驱动的程序化场景，覆盖至少 3 种生物群系。
 | P3 多智能体 | 第 19–30 周 | 20 个 Agent + Orchestrator + 依赖 DAG 联调；首个可玩 Demo | 端到端流水线跑通（提案→可玩关卡）；变更传播自动生效；Demo 含完整 HUD/音频/战斗 |
 | P4 实战打磨 | 第 31–42 周 | 外部生成模型接入、质量控制、3–4 个生物群系完整关卡 | 完整关卡由 AI 驱动生成；人工介入率 < 20% |
 | P5 发布准备 | 第 43–52 周 | 优化、打磨、本地化、平台适配 | Steam/EGS 可提交包体 |
-| P5 UE6 迁移 | 2027+ | Verse + Scene Graph 适配 | 核心逻辑迁 Verse；MCP 架构复用 ≥ 80% |
+| P6 UE6 迁移 | 2027+ | Verse + Scene Graph 适配 | 核心逻辑迁 Verse；MCP 架构复用 ≥ 80% |
 
 验收标准见 §9。
 
@@ -402,18 +402,6 @@ AI 驱动的程序化场景，覆盖至少 3 种生物群系。
 
 | # | 验收项 | 方式 | 通过标准 |
 |---|---|---|---|
-| AC-P2-01 | Market Analyst 产出市场报告 | 自动化测试 | 给定品类关键词 → 产出报告（含 3 年收入趋势/用户画像/TAM 估算），引用 ≥ 5 个数据源 |
-| AC-P2-02 | Competitive Intelligence 产出竞品矩阵 | 自动化测试 | 给定目标品类 → 扫描 ≥ 15 款竞品 → 生成特征对比矩阵 + 差异化缺口分析 |
-| AC-P2-03 | Game Design Strategist 产出玩法方案 | 手动验证 | 基于市场缺口提出 ≥ 2 套核心玩法方案，每套含玩法循环图和机制概要 |
-| AC-P2-04 | Business Strategist 产出商业模型 | 自动化测试 | 对每套玩法方案输出定价策略 + 18 个月盈亏推演 + 平台分成对比 |
-| AC-P2-05 | Technical Feasibility 产出评估报告 | 手动验证 | 对每套方案输出技术可行性结论 + 关键风险清单 + 范围估算 |
-| AC-P2-06 | Creative Direction 产出世界观框架 | 手动验证 | 产出含世界观概述 + 叙事基调 + 视觉情绪板 + 音频策略的创意方向文档 |
-| AC-P2-07 | 概念提案完整生成 | 端到端测试 | 模糊方向输入 → 6 个 Agent 协同 → 产出 15–20 页《游戏概念提案》，人工评审通过 |
-
-### 9.3 P2 策略与研究组验收
-
-| # | 验收项 | 方式 | 通过标准 |
-|---|---|---|---|
 | AC-P1-01 | PCGToolset 生成 PCG 图 | 自动化测试 | 给定 JSON 规格（含 Surface Sampler + Mesh Spawner 参数），Agent 生成合法 PCG Graph 资产 |
 | AC-P1-02 | PCG 异步生成 | 自动化测试 | 调用 `UPCGGenerateGraphAsync` → 关卡中出现生成结果 → `GetGeneratedGraphOutput` 返回正确数据 |
 | AC-P1-03 | BuildToolset 编译 | 自动化测试 | Agent 提交 Verse/C++ 代码 → Live Coding 编译成功 → 无编译错误 |
@@ -422,6 +410,18 @@ AI 驱动的程序化场景，覆盖至少 3 种生物群系。
 | AC-P1-06 | RAG 知识库可用 | 手动验证 | Agent 调用 UE API 时，检索到对应官方文档片段并正确使用 |
 | AC-P1-07 | Level Designer 产出 Blockout | 自动化测试 | 给定 GDD 任务 JSON → 产出 Blockout 规格（含 waypoints/zones/pacing_curve），坐标在关卡范围内 |
 | AC-P1-08 | Lighting 自动布光 | 自动化测试 | 给定 PCG 场景 + 风格指南 → 自动放置主光源 + PostProcess Volume → 截图亮度/色温在风格指南范围内 |
+
+### 9.3 P2 策略与研究组验收
+
+| # | 验收项 | 方式 | 通过标准 |
+|---|---|---|---|
+| AC-P2-01 | Market Analyst 产出市场报告 | 自动化测试 | 给定品类关键词 → 产出报告（含 3 年收入趋势/用户画像/TAM 估算），引用 ≥ 5 个数据源 |
+| AC-P2-02 | Competitive Intelligence 产出竞品矩阵 | 自动化测试 | 给定目标品类 → 扫描 ≥ 15 款竞品 → 生成特征对比矩阵 + 差异化缺口分析 |
+| AC-P2-03 | Game Design Strategist 产出玩法方案 | 手动验证 | 基于市场缺口提出 ≥ 2 套核心玩法方案，每套含玩法循环图和机制概要 |
+| AC-P2-04 | Business Strategist 产出商业模型 | 自动化测试 | 对每套玩法方案输出定价策略 + 18 个月盈亏推演 + 平台分成对比 |
+| AC-P2-05 | Technical Feasibility 产出评估报告 | 手动验证 | 对每套方案输出技术可行性结论 + 关键风险清单 + 范围估算 |
+| AC-P2-06 | Creative Direction 产出世界观框架 | 手动验证 | 产出含世界观概述 + 叙事基调 + 视觉情绪板 + 音频策略的创意方向文档 |
+| AC-P2-07 | 概念提案完整生成 | 端到端测试 | 模糊方向输入 → 6 个 Agent 协同 → 产出 15–20 页《游戏概念提案》，人工评审通过 |
 
 ### 9.4 P3 多智能体验收
 

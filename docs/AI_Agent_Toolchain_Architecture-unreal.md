@@ -516,14 +516,15 @@ Orchestrator 检测到 parent_hash 变了
 
 | 阶段 | 周期 | 目标 | 交付 |
 |---|---|---|---|
-| P0 地基 | 2–4 周 | MCP 打通、首个 Toolset、安全体系 | Agent 能安全改关卡并回滚 |
-| P1 核心工具链 | 4–8 周 | PCG + Level Designer + Lighting + Asset Retrieval + Build/Test + RAG | Agent 能程序化生成场景并自动编译测试 |
-| P2 策略与研究 | 4–6 周 | S1–S6 Strategy & Research Agent 上线 | 模糊方向 → 自动生成含市场/竞品/玩法/商业/技术/创意的完整提案 |
-| P3 多智能体 | 6–8 周 | 20 个 Agent + Orchestrator + 依赖 DAG 联调 | 端到端流水线跑通，从提案到可玩关卡 |
-| P4 实战打磨 | 持续 | 外部生成模型接入、质量控制、真实内容生产 | 一个小品类垂直打透 |
-| P5 UE6 迁移 | 2027+ | Verse + Scene Graph 适配 | 逻辑迁 Verse，MCP 架构复用 |
+| P0 地基 | 1–4 周 | MCP 打通、首个 Toolset、安全体系 | Agent 能安全改关卡并回滚 |
+| P1 核心工具链 | 5–12 周 | PCG + Level Designer + Lighting + Asset Retrieval + Build/Test + RAG | Agent 能程序化生成场景并自动编译测试 |
+| P2 策略与研究 | 13–18 周 | S1–S6 Strategy & Research Agent 上线 | 模糊方向 → 自动生成含市场/竞品/玩法/商业/技术/创意的完整提案 |
+| P3 多智能体 | 19–30 周 | 20 个 Agent + Orchestrator + 依赖 DAG 联调 | 端到端流水线跑通，从提案到可玩关卡 |
+| P4 实战打磨 | 31–42 周 | 外部生成模型接入、质量控制、真实内容生产 | 完整关卡由 AI 驱动生成；人工介入率 < 20% |
+| P5 发布准备 | 43–52 周 | 优化、打磨、本地化、平台适配 | Steam/EGS 可提交包体 |
+| P6 UE6 迁移 | 2027+ | Verse + Scene Graph 适配 | 逻辑迁 Verse，MCP 架构复用 |
 
-先在 disposable sandbox map 上验证 Agent，确认没问题了再进正式关卡。核心框架代码往 Verse 侧靠，为 UE6 做准备。PCG 和资源层天然可迁移，不用太担心。
+> 周期与 PRD §7 里程碑对齐。先在 disposable sandbox map 上验证 Agent，确认没问题了再进正式关卡。核心框架代码往 Verse 侧靠，为 UE6 做准备。PCG 和资源层天然可迁移，不用太担心。
 
 ---
 
