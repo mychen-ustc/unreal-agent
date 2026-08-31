@@ -212,7 +212,7 @@ Agent 间通信全部走 SharedState JSON Schema，不传自由文本。每条�
 
 #### 4.1.4 编排层（L4）
 
-技术选型推荐 LangGraph 或自研状态机，搭配 MCP Client。负责：
+编排核心采用**自研最小编排状态机**（asyncio，DAG 依赖传播 + 回退 + 空间分区），长任务持久化经统一 `DurableProvider` 接口外挂成熟引擎（Temporal / Prefect / SQLite），不绑定任何 Agent 图框架（详见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md)），搭配 MCP Client。负责：
 
 | 子功能 | 说明 | 优先级 |
 |---|---|---|

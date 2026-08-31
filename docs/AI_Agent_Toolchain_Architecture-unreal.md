@@ -484,7 +484,7 @@ GDD 规格 → 外部生成 API（图像/3D/音频）
 
 ## 6. 编排层
 
-技术选型推荐 LangGraph 或自研状态机，搭配 MCP Client。这一层要管四件事：
+编排核心采用**自研最小编排状态机**（asyncio），长任务持久化经统一 `DurableProvider` 接口外挂成熟引擎（Temporal / Prefect / SQLite），不绑定任何 Agent 图框架（完整选型见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md)），搭配 MCP Client。这一层要管四件事：
 
 1. 任务编排：顺序执行、条件分支、循环回退。比如 CodeGen 出来的代码 Reviewer 打分低于 70 或者有 critical bug，就退回 Gameplay Agent 重做，最多 3 次。
 2. RAG grounding：Agent 调用 UE 官方文档、项目规范、引擎源码做检索增强。AutoUE 已经证明这是抑制工具幻觉的关键手段。

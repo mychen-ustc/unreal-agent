@@ -102,7 +102,7 @@
 
 | 关注点 | 选型 | 理由 |
 |---|---|---|
-| **编排框架** | **Python + LangGraph**（StateGraph 表达 DAG/回退）+ 自研 DAG 引擎（依赖传播、stale 标记） | LangGraph 提供状态图/条件边/Checkpoint 原语，加速 MVP；自研部分负责 PRD §4.1.3 的依赖 DAG 与回退语义 |
+| **编排核心** | **自研最小编排核心**（asyncio 状态机 + 依赖传播 + stale + 回退）+ **可选 Durable Execution 外挂**（Temporal / Prefect / SQLite checkpoint） | 见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md)（本章节为唯一事实源，取代原 TDR-006 的 LangGraph）；图/状态机/回退为核心 IP 自研；长任务持久化外挂成熟引擎，支持单机到 SaaS 多租户演进 |
 | Agent 运行时 | **Python 3.11+，asyncio** | 协程并发、AI 生态（LangChain/LlamaIndex）最成熟、与 UE Python Tool 同一语言 |
 | **运行入口（P0）** | **CLI + 结构化 JSON 日志**（`python -m orchestrator run --task "..."`） | 最小成本、可被 CI 调用、日志可喂回 LLM；Web Console / UE 面板为 P1+（§6.5） |
 | **模型接口（默认）** | **Anthropic Claude**（`claude-opus-4-5` 复杂 / `claude-sonnet-4-5` 主力 / `claude-haiku-4-5` 兜底）+ **LiteLLM 统一封装** | 代码/工具调用最强、长上下文、复杂推理领先；LiteLLM 满足"模型不锁定"（TDR-010） |
@@ -126,7 +126,7 @@
 CLI (Typer + Rich)              ← 运行入口：结构化 JSON 日志
    │
    ▼
-LangGraph StateGraph            ← 编排：DAG + 回退循环 + Checkpoint
+自研编排核心（asyncio 状态机） ← 编排：DAG + 回退 +（可选 Durable 外挂）
    │
    ├─ Agent Runtime (asyncio)   ← 33 个领域 / 评估 Agent
    │     │
@@ -141,12 +141,12 @@ LangGraph StateGraph            ← 编排：DAG + 回退循环 + Checkpoint
 
 ### 2.4 选型原则：框架是加速器，核心 IP 自研
 
-为避免"框架锁定"误解，明确边界：**LangGraph、LiteLLM、LanceDB 均是可替换的适配层**，真正的核心 IP 是：
+为避免"框架锁定"误解，明确边界：**LiteLLM、LanceDB、Durable Execution 引擎（Temporal/Prefect）均是可替换的适配层**，真正的核心 IP 是：
 - **自研 Toolset**（L2）—— 直接改 UE 引擎、模型无关
 - **自研 SharedState 契约 + Agent 角色定义**（L3）—— JSON Schema，与框架解耦
-- **自研编排语义**（L4）—— DAG 依赖传播、回退策略、空间分区，LangGraph 只是其 StateGraph 实现载体
+- **自研编排语义**（L4）—— DAG 依赖传播、回退策略、空间分区、多租户维度（自研最小编排核心，作为核心 IP）
 
-若未来需替换 LangGraph 为自研状态机，仅需重写 `orchestrator/dag.py` 的 StateGraph 组装部分，Agent / Toolset / SharedState 均不动（TDR-006）。
+**编排核心自研、不绑定任何 Agent 图框架**（已剔除 LangGraph）。长任务持久化/恢复通过统一的 `DurableProvider` 接口外挂成熟引擎（Temporal 生产级 / Prefect 轻量 / SQLite 单机）。完整选型与设计见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md)。更换编排实现仅影响 `orchestrator/` 内部（`dag.py`/`scheduler.py`/`durable/`），Agent / Toolset / SharedState 均不动。
 
 ---
 
@@ -250,7 +250,7 @@ Orchestrator 更新 DAG / 触发下游 stale 传播
 整条流水线依赖"UE 编辑器在跑、MCP 连得上"，但编辑器可能崩溃、Python 插件重启、全量编译重启导致 MCP 连接中断。需要连接监督与恢复机制：
 
 - **心跳**：Orchestrator 的 `mcp_client.py` 维护到 UE MCP 的 TCP/HTTP 心跳，超时判定断开。
-- **任务状态持久化**：所有 `async_long` 任务的 `job_id`、`trace_id`、`parent` 写入 `.logs/task_state.json`（或 SQLite），与 LangGraph Checkpoint 配合。
+- **任务状态持久化**：所有 `async_long` 任务的 `job_id`、`trace_id`、`parent` 写入 `.logs/task_state.json`（或 SQLite）。P0 由 `local_sqlite` DurableProvider 持久化；生产级可升到 Temporal（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §7）。
 - **断线恢复**：连接恢复后，Orchestrator 从持久化状态重建未完成任务——查询 UE 侧 job 是否仍在运行（`pcg_get_job_status`），在则继续收割，不在则判定失败并回退。
 - **编辑器重启编排**：若检测到编辑器关闭，Orchestrator 标记所有依赖 UE 的任务为 `blocked`，等待人工 `--wait-editor` 重新就绪或自动拉起（脚本化启动 + `init_unreal.py` 自注册）。
 - **降级策略**：只读类 Agent（S1/S2/S4 等不依赖 UE 的）在编辑器离线时仍可运行；写/引擎类 Agent 阻塞。
@@ -513,29 +513,29 @@ class DomainAgent(ABC):
 - **失效传播**：上游 `shared_state_delta` 提交后，BFS 标记下游 `stale`（深度 ≤ 3，PRD §4.1.3）；下游 Agent 被调度时先 `diff` 决定是否重跑，避免无效计算。
 - **回退循环**：**工程分（⑬ Reviewer）、体验分与商业分（E1–E6）任一 < 70 或含 critical bug → 按报告的 `link_back_to` 定位责任 Agent → 重新入队（最多 3 次）→ 仍失败则升级人工**。评估组自身只读，不回写生产，避免评估引发无效重跑。
 
-#### 6.2.1 长时任务的执行模型（LangGraph 协调）
+#### 6.2.1 长时任务的执行模型（自研协调 + Durable 外挂）
 
-LangGraph 的 StateGraph 是同步图推演模型，天然不适合让一个节点阻塞等待几十秒到几十分钟的长任务（PCG 生成、全量编译、PIE 测试）。为此引入**两阶段节点 + 外部任务句柄**模式：
+编排核心是同步状态机，天然不适合让一个节点阻塞等待几十秒到几十分钟的长任务（PCG 生成、全量编译、PIE 测试）。为此引入**两阶段节点 + 外部任务句柄 + DurableProvider 持久化**模式：
 
 ```
 图节点（Agent 发起长任务）
    │ 1. 校验/准备参数，同步返回 {job_id, status:"pending"}
    ▼
-StateGraph 将该边标记为 `suspended`（节点返回特殊值，不继续图推演）
+编排核心将该边标记为 suspend（状态交给 DurableProvider，不阻塞其它分支）
    │
-   ▼（后台 asyncio 任务继续轮询 UE 的 job_id）
-   │  异步收割 → 结果写入 shared_state + 触发图节点恢复
+   ▼（后台 asyncio 收割协程轮询 UE 的 job_id；生产级可经 Temporal 续跑）
+   │  完成 → 结果写入 shared_state + 触发图节点恢复
    ▼
-StateGraph 恢复该节点 → 读取结果 → 继续下游
+编排核心恢复该节点 → 读取结果 → 继续下游
 ```
 
 具体规则：
-- Agent 的 Tool 调用分两类：`sync`（< 10s，正常走图步）与 `async_long`（> 10s，返回 `{job_id}` 即挂起）。
+- Agent 的 Tool 调用分两类：`sync`（< 10s，正常走步）与 `async_long`（> 10s，返回 `{job_id}` 即挂起）。
 - 挂起节点让出协程控制权，`TaskQueue` 调度其它就绪分支，**不阻塞无关任务并行**。
 - `job_id` 统一注册到 Orchestrator 的 `AsyncJobRegistry`，由独立收割协程轮询/回调 UE 的 `pcg_get_job_status` / `build_status`，完成后恢复挂起节点。
-- LangGraph 的 Checkpoint（TDR-006）持久化挂起状态，进程重启后可恢复未完成的异步任务，避免长任务因崩溃丢失。
+- **持久化与恢复**：挂起状态经 `DurableProvider` 落盘（P0 `local_sqlite`；生产级 `temporal_adapter`）。进程/编辑器重启后，按 `job_id` 重建任务、查询 UE 侧 job 状态、继续或判定失败回退，避免长任务因崩溃丢失且**不重复触发外部副作用**。实现详见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md) §7。
 
-> 这一模式把"图推演"（快）与"长动作等待"（慢）解耦，是 P0 能否跑通 `run_pie_tests`、`pcg_run_async`、全量编译的关键。
+> 这一模式把"状态机推演"（快）与"长动作等待"（慢）解耦，是 P0 能否跑通 `run_pie_tests`、`pcg_run_async`、全量编译的关键。
 
 ### 6.3 RAG Grounding
 
@@ -696,7 +696,8 @@ repo/
 ├── orchestrator/              # L4 编排（Python）
 │   ├── cli.py                # CLI 入口（Typer）：run / plan / approve / rollback
 │   ├── dag.py                # 自研 DAG 引擎（依赖传播、stale、回退）
-│   ├── state_graph.py        # LangGraph StateGraph 组装（可替换适配层）
+│   ├── scheduler.py          # 自研 asyncio 调度器（拓扑 + 优先级 + 空间分区）
+│   ├── durable/              # DurableProvider 外挂（base / local_sqlite / temporal_adapter / prefect_adapter）
 │   ├── agents/                # 33 个领域 / 评估 Agent（生产 + 评估组分目录）
 │   ├── rag.py                # LanceDB 检索 + 注入
 │   ├── memory/                # LanceDB 持久化目录（gitignored）
@@ -803,7 +804,7 @@ push / PR
 
 - **模型可替换**：默认 Claude（Opus/Sonnet/Haiku 三档），通过 **LiteLLM 封装**，换模型 = 改一个配置文件（`orchestrator/config/models.yaml`），满足"模型不锁定"（TDR-010、PRD §5.4）。
 - **向量库可替换**：LanceDB 通过 LangChain `VectorStore` 抽象接入，换 Qdrant/Milvus = 改适配层（TDR-009）。
-- **编排可替换**：LangGraph 仅实现自研 DAG/状态图语义，重写 `orchestrator/dag.py` 即可切换自研状态机，Agent / Toolset / SharedState 不动（TDR-006）。
+- **编排可替换/自研**：编排核心为自研最小编排核心（不绑定 Agent 图框架），长任务持久化经统一 `DurableProvider` 接口外挂可换引擎（Temporal/Prefect/SQLite）。Agent / Toolset / SharedState 不动（见 [Agent Harness 选型](./agent-harness-selection-and-design.md)）。
 - **Toolset 版本适配**：适配层集中在 `orchestrator/adapters/ue_bridge.py`，MCP API 变更 = 改一个文件。
 - **文档覆盖**：每个 Tool 公开方法 100% docstring + JSON Schema 自动生成（CI 校验）。
 - **新增 Agent / Toolset**：定义 Schema + 注册即可，无需改编排层（PRD §5.5）。
@@ -829,7 +830,8 @@ push / PR
 | TDR-003 | Python Tool 为主 + C++ Tool 为辅 | Python 迭代快覆盖 90%；C++ 用于 PCG/Profiler 性能路径 | 全 C++ | 采纳 |
 | TDR-004 | 逻辑优先 Verse，C++ 仅扩展 | UE6 Verse + Scene Graph 路线，降低迁移成本 | 全 C++/蓝图 | 采纳 |
 | TDR-005 | SharedState 以 Git JSON 为事实源 | 天然版本化 + 回滚，满足 §7 回滚目标 | 数据库 | 采纳 |
-| TDR-006 | 编排用 **Python + LangGraph** + 自研 DAG | LangGraph 提供 StateGraph/条件边/Checkpoint 原语加速 MVP；依赖传播、stale 标记、回退语义自研。LangGraph 为可替换适配层，非框架锁定 | 纯自研状态机 | 采纳 |
+| TDR-006 | ~~编排用 **Python + LangGraph** + 自研 DAG~~ | **已取代**：LangGraph 从底座剔除（长任务 durable 弱、API 稳定性风险、厂商引力，详见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §3） | 纯自研状态机 | **已取代 → TDR-012** |
+| TDR-012 | **编排核心自研最小编排核心** + 可选 Durable Execution 外挂（Temporal/Prefect/SQLite），不绑定 Agent 图框架 | 图/状态机/回退为核心 IP 自研；长任务持久化外挂成熟引擎；支持单机到 SaaS/多租户演进（TDR-H02/H03，见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §10） | LangGraph / 厂商 Agent SDK | 采纳 |
 | TDR-007 | MCP 绑 127.0.0.1 + 本机单人 | 满足 R-07，简化认证；多用户为 follow-up | Token 认证 | 本期采纳 |
 | TDR-008 | 全量编译放 nightly，不阻塞 PR | 缓解 R-03 长编译 | 分布式编译 | 采纳 |
 | TDR-009 | **RAG / 长期记忆用 LanceDB** | 嵌入式零运维、列式+磁盘索引性能优于 ChromaDB；支持向量+全文+元数据混合检索；数据随项目走 | ChromaDB / Qdrant | 采纳 |
