@@ -11,17 +11,18 @@
 当前机器（Apple M5 · 24 GB RAM · 685 GB 空闲磁盘 · macOS 26.5）**满足本阶段研发运行基线**。
 
 **已完成的环境准备**（见 §12 进度记录）：
-- ✅ **UE 5.8 源码版编译安装完成**：`/Users/Shared/UnrealEngine-5.8-source`（5.8 分支源码 3.8GB → 依赖 + 编译产物约 120GB）。`Build.sh UnrealEditor Mac Development` **5726/5726 全部通过**（567 个模块 dylib），主程序 `Engine/Binaries/Mac/UnrealEditor` 已产出，`UnrealEditor.app` 已手动组装+ad-hoc 签名；**引擎运行时实测可启动**（详见 §12.1）。
+- ✅ **UE 5.8 源码版编译完成**：`/Users/Shared/UnrealEngine-5.8-source`（5.8 分支）。`Build.sh UnrealEditor Mac Development` **5726/5726 全部通过**，2072 个引擎+插件模块 dylib 已 marshal 到 `Engine/Binaries/Mac/`，`UnrealEditor.modules` 完整清单已生成；编辑器实测**可完成插件/模块/Slate UI/Metal RHI 初始化**。
+- ⚠️ **仅剩 Metal toolchain 组件待补**：CoreSimulator 复检已修复；但 `metal` 仍是 stub（`/Library/Developer/Components/` 空），引擎初始化到最后一步 Metal 着色器编译时停住（`cannot execute tool 'metal'`）。此非编译/引擎问题，补装 `sudo xcodebuild -downloadComponent MetalToolchain`（需网络可达 Apple、建议绕代理）即可跑通带渲染的完整编辑器会话；**MCP/命令行工具链基础不受影响**。
 - ✅ **Xcode 26.6 完整版 + 许可已接受**，`xcode-select` 指向正确（完整版）。
 - ✅ **Python 环境就绪**：conda `unreal-agent` 环境（Python 3.13.14）+ 全部核心依赖（langgraph / litellm / mcp / lancedb / opentelemetry / pytest / pydantic 等，已 import 验证）。
 - ✅ **模型凭据已配置并连通验证**：`.env` 已填 `LLM_BASE_URL` / `LLM_API_KEY`，LiteLLM 实测成功调用 DeepSeek `deepseek-chat` 并返回响应。
 - ✅ **Redis 就绪**：brew 安装 v8.10.1 并已启动，`redis-cli ping` → `PONG`（无认证要求）。
 - ✅ **Git 身份已配置**：`user.name=mychen-ustc`、`user.email=136499614@qq.com`。
 
-**已知遗留问题（1 项，不阻塞引擎使用）**：
-- 本机 Xcode 的 **`CoreSimulator`/simulator 组件未完整安装**，导致 xcodebuild 无法加载 `IDESimulatorFoundation`，UBT 的「`.app` 自动打包」失败（已手动组装 `.app` 规避；拉直二进制即可运行引擎）。若要彻底修复：`sudo xcodebuild -runFirstLaunch` 或 `xcodebuild -downloadPlatform iOS`（需网络可达 Apple 域名，建议绕代理后执行）。详见 §12.1。
+**关键遗留问题（阻塞完整引擎会话）**：
+- **仅剩 1 项待办**：Xcode **`MetalToolchain` 组件**（CoreSimulator 已复检修复；`.app` finalize 问题已随 CoreSimulator 修复，`.app` 仍手动组装）。启用带渲染的完整编辑器会话（P0 的可视化验证）需补装：`sudo xcodebuild -downloadComponent MetalToolchain`（需网络可达 Apple 域名，建议绕代理后执行）。
 
-**研发启动就绪**：Xcode、UE 5.8 引擎、Python 依赖、Redis、模型凭据、Git 全部就绪，可进入 **P0 地基**（AC-P0-01~06）。
+**研发启动就绪状态**：Xcode、UE 5.8 引擎（**编译 + 引擎初始化完成**）、Python 依赖、Redis、模型凭据、Git 均已就绪；**唯一待办**是补装 Xcode 的 `MetalToolchain` 组件以启用**带渲染**的完整编辑器会话（MCP/命令行工具链基础不受影响），补齐后即可进入 **P0 地基**（AC-P0-01~06）。
 
 ---
 
@@ -34,7 +35,7 @@
 | E-01 | 硬件 | UE 5.8 编辑器能跑、可增量编译 | Apple M5 / 24 GB RAM / 685 GB 空闲 / Docker 可用 | 🟡 满足基线，见 §2 |
 | E-02 | 操作系统 | macOS（UE 5.8 官方支持） | macOS 26.5.1 (arm64) | ✅ |
 | E-03 | 完整 Xcode + CLT | UE C++ 编译/Live Coding 必需 | Xcode 26.6（完整版）+ 许可已接受，`xcode-select`= `/Applications/Xcode.app/...`；SDK 26.5 | ✅ 已完成（*simulator 组件未装，非阻塞*） |
-| E-04 | UE 5.8 LTS 引擎 | 源码编译安装（§4.1） | `/Users/Shared/UnrealEngine-5.8-source`，`UnrealEditor` 5726/5726 编译通过，运行时实测可启动 | ✅ 已完成 |
+| E-04 | UE 5.8 LTS 引擎 | 源码编译安装（§4.1） | 编译通过（5726/5726，2072 引擎+插件模块齐全）；CoreSimulator 已修复，编辑器初始化到 RHI/渲染，**仅 Metal toolchain 组件待补** | 🟡 编译+引擎初始化通过；渲染会话仅待补 MetalToolchain 组件 |
 | E-05 | Python 运行时 | 3.11+（用 3.11/3.12/3.13 均可） | conda `unreal-agent` env = Python 3.13.14 | ✅ 已完成 |
 | E-06 | Python 依赖 | langgraph / litellm / mcp / pytest / lancedb / opentelemetry / typer / rich | 已全部装进 `unreal-agent` env（import 验证通过） | ✅ 已完成 |
 | E-07 | Redis | SharedState 运行时缓存 | v8.10.1 已装并启动，`ping` → PONG | ✅ 已完成 |
@@ -111,15 +112,12 @@ cd UnrealEngine-5.8-source
 ./GenerateProjectFiles.command
 
 # 4) 编译引擎（冷编译耗时较长，建议后台跑、可增量）
-#    方式 A：Makefile 编译
-./Make.command "UE5Editor"
-#    方式 B（等价，Xcode 工程）：编译 UnrealEditor 目标
-#    xcodebuild -project UE5.xcworkspace -scheme UE5Editor -configuration Development -json
+#    UE 5.8 编辑器 target 名为 UnrealEditor（非 UE5Editor）
+./Engine/Build/BatchFiles/Mac/Build.sh UnrealEditor Mac Development
 ```
 
-> 编译产物：`Engine/Binaries/Mac/UE5Editor`。
-> Ubuntu/非 Mac 语义略；**本机为 macOS，用上述命令即可**。
-> UE 首次运行生成 `DerivedDataCache`（可达数十 GB），已在 `.gitignore` 排除。
+> 编译产物：`Engine/Binaries/Mac/UnrealEditor`（+ 引擎/插件模块 dylib）。编译后用 `GenerateProjectFiles` 产出的 `UE5 (Mac).xcworkspace` 的 `UnrealEditor` scheme 亦可，但本机 xcodebuild 因 Xcode 组件缺失无法完整 finalize `.app`（见 §12.1）。
+> 本机为 macOS（arm64）。UE 首次运行生成 `DerivedDataCache`（可达数十 GB），已在 `.gitignore` 排除。
 
 ### 4.2 Launcher 二进制版（备用）
 
@@ -297,8 +295,9 @@ git config --get user.name   # 核对
 conda activate unreal-agent
 
 # 启动 UE 5.8 编辑器（源码版产物；项目 .uproject，含 MCP Server 绑定 127.0.0.1:8000/mcp）
-UE_EDITOR=/Users/Shared/UnrealEngine-5.8-source/Engine/Binaries/Mac/UE5Editor
-"$UE_EDITOR" "$PWD/unreal/UnrealAgent.uproject" --project "$PWD/unreal/UnrealAgent.uproject" &
+# 注：带渲染的完整编辑器会话需先补齐 Xcode MetalToolchain 组件（§12.1）
+UE_EDITOR=/Users/Shared/UnrealEngine-5.8-source/Engine/Binaries/Mac/UnrealEditor
+"$UE_EDITOR" "$PWD/unreal/UnrealAgent.uproject" &
 
 # 运行 Orchestrator（L4）CLI 入口
 python -m orchestrator run --task "在关卡中放置一个 Cube"
@@ -317,8 +316,8 @@ python -m orchestrator run --task "在关卡中放置一个 Cube"
 | UE 5.8 源码 | `EpicGames/UnrealEngine` `5.8` 分支浅克隆到 `/Users/Shared/UnrealEngine-5.8-source`（3.8GB / 223,996 文件，HEAD `ff8421f2`）| ✅ 源码就位 |
 | UE 依赖下载 | `./Setup.sh --force` → **100%**（31113/31113 MiB；ThirdParty ≈ 14GB） | ✅ 已完成 |
 | UE 生成工程 | `./GenerateProjectFiles.command` → Succeeded | ✅ 已完成 |
-| UE 编译 | `Build.sh UnrealEditor Mac Development` → **5726/5726 通过**（567 模块 dylib） | ✅ 已完成 |
-| UE `.app`/运行 | 手动组装 `UnrealEditor.app`（ad-hoc 签名）；`UnrealEditor-Cmd` 实测可启动 | ✅ 可运行（详见 §12.1） |
+| UE 编译 | `Build.sh UnrealEditor Mac Development` → **5726/5726 通过**（2072 引擎+插件模块齐全，dylib 已 marshal） | ✅ 已完成 |
+| UE `.modules`/运行 | `UnrealEditor.modules`（2072 模块）已生成；CoreSimulator 已修复，编辑器初始化至 RHI/渲染阶段，**仅 Metal toolchain 组件待补** | 🟡 引擎初始化通过；渲染会话仅待补 MetalToolchain（详见 §12.1） |
 | Python env | conda `unreal-agent` = 3.13.14 | ✅ 已创建 |
 | 依赖 | langgraph 1.2.11 / litellm 1.98.0 / mcp 2.1.1 / lancedb 0.37.1 / otel 1.44 / pytest / pydantic | ✅ 已装入 `unreal-agent`，import 通过 |
 | Redis | v8.10.1 运行中（`127.0.0.1:6379`，无认证） | ✅ 已装并启动，`ping` → PONG |
@@ -327,7 +326,7 @@ python -m orchestrator run --task "在关卡中放置一个 Cube"
 | Docker | 29.6 可用 | ✅ 可选（CI 期才用） |
 | macOS / HW | M5 / 24GB / 685GB | ✅ 满足基线 |
 
-> **当前状态**：UE 5.8 源码版安装完成（编译 5726/5726 通过、`.app` 已组装、引擎运行时实测可启动）。详见 §12.1。
+> **当前状态**：UE 5.8 源码版**编译 + 引擎初始化完成**（5726/5726 通过、2072 模块齐全、`UnrealEditor.modules` 已生成）；CoreSimulator 已修复，**带渲染的编辑器会话仅待补 MetalToolchain 组件**。详见 §12.1。
 
 ---
 
@@ -354,20 +353,24 @@ python -m orchestrator run --task "在关卡中放置一个 Cube"
 /Users/Shared/UnrealEngine-5.8-source/Engine/Binaries/Mac/libUnrealEditor-*.dylib  # 567 个模块动态库
 ```
 
-**关于 `.app` finalize 与 Xcode simulator**（本机已知问题）：
-- UE 在 Mac 上由 UBT 调用 `xcodebuild` 完成 `.app` 打包；本机 `xcodebuild` 因 **`CoreSimulator.framework` 缺失**无法加载插件而失败（`-runFirstLaunch` 亦卡住，因需写入 `/Library` + 可能需访问 Apple 组件服务器）。
-- 因此**手动**补齐了 `UnrealEditor.app`：`Contents/MacOS/UnrealEditor`（复制主程序）、`Info.plist`（5.8.2）、`PkgInfo`、`Resources` 图标，并 `codesign --force -s -`（ad-hoc，无证书）。
-- 该问题**不影响引擎可用性**（拉直二进制即可运行）；仅影响 Finder 双击「.app」。若要彻底修复：`sudo xcodebuild -runFirstLaunch` 或 `xcodebuild -downloadPlatform iOS`（需网络可达 Apple 域名，建议绕过代理后执行）。
+**关于 `.app` finalize 与 Xcode 组件**（复检记录）：
+- ✅ **CoreSimulator 已修复**（复检）：`/Library/Developer/PrivateFrameworks/CoreSimulator.framework` 现已存在，UBT 的 `.app` finalize 不再因 simulator 插件缺失而失败（`.app` 仍为手动组装+ad-hoc 签名）。
+- ❌ **Metal toolchain 组件仍未安装**（复检）：`metal` 仅是 107KB 的 stub，`/Library/Developer/Components/` 仍为空、无 `OSX*.xctoolchain`。编辑器实测仍停在 RHI 阶段报 `cannot execute tool 'metal' due to missing Metal Toolchain`。
 
-**验证引擎可运行**（无头/commandlet）：
+**当前引擎运行状态（诚实结论）**：
+- ✅ **编译完成**：`Build.sh UnrealEditor Mac Development` → 5726/5726 全部通过，567 引擎 + 1541 插件模块 dylib 齐全、已 marshal 到 `Engine/Binaries/Mac/`。
+- ✅ **`UnrealEditor.modules` 完整生成**（2072 模块，引擎+插件），运行时能定位加载全部模块。
+- ✅ **引擎初始化深入通过**：插件挂载、模块加载、Slate UI、Metal RHI 加载、`PreRHIInit` 全部通过，直到 GPU/着色器阶段。
+- ⚠️ **GPU/渲染初始化被 Metal toolchain 组件缺失阻塞**（复检仍卡此）：编辑器初始化到最后一步 Metal 着色器编译时停住，报 `cannot execute tool 'metal'`。**这是唯一剩余阻塞**；非编译/引擎问题，也非 CoreSimulator 问题（已修复）。
+
+**补齐剩余 Xcode 组件（只有 MetalToolchain 需下载）**：
 ```bash
-cd /Users/Shared/UnrealEngine-5.8-source
-Engine/Binaries/Mac/UnrealEditor-Cmd -version
-# 正常会进入引擎运行时（建共享内存、fork 成功、可继续加载/执行）
+# 需 sudo + 网络可达 Apple 域名（若 Clash 代理挡 Apple 下载，请先绕代理 / 加白名单再执行）
+sudo xcodebuild -downloadComponent MetalToolchain     # 仅此一项仍缺：补 Metal 着色器工具链
+# 完成后再启动编辑器，Metal 检查即通过，可跑通带渲染的完整编辑器会话
 ```
-
-> 说明：编译日志 `/Users/Shared/ue-build.log`。编译本可后台增量续跑；已在修复 1 处 `-Werror` 编译错误后全部通过。
-> 若编译报 SDK/Xcode 版本不满足，确保 Xcode 26.6 的 `xcode-select` 指向完整版（`/Applications/Xcode.app/...`）。
+> 说明：编译日志 `/Users/Shared/ue-build.log`。已在修复 1 处 `-Werror` 编译错误后全部通过。
+> 当前引擎产物中 `UnrealEditor.modules`（2072 模块）与 marshal 后的 dylib 已就位，MCP Server 等基于编辑器的工具可在此基础上继续研发；**仅带渲染的完整编辑器会话**待补 MetalToolchain 组件。
 
 ---
 
