@@ -1,7 +1,7 @@
 # 环境准备指南 · 研发 / 运行环境
 
 > **适用**：研发启动前的环境搭建（本机单人开发，即 TechDesign §9.3「开发期」形态）。
-> **关联文档**：[PRD](./AI_Agent_Game_Dev_PRD.md) §6 技术约束 / §7 里程碑 ｜ [TechDesign](./AI_Agent_Game_Dev_TechDesign.md) §2.3 技术选型 / §9 工程化。
+> **关联文档**：[PRD](./AI_Agent_Game_Dev_PRD.md) §6 技术约束 / §7 里程碑 ｜ [TechDesign](./AI_Agent_Game_Dev_TechDesign.md) §2.3 技术选型 / §9 工程化 ｜ [ROADMAP](./ROADMAP.md) P0 ｜ [ops/STARTUP-GATE](./ops/STARTUP-GATE.md)（启动前置条件 Gate）
 > **最后核验**：对应当前机器环境现状的差异已在下文逐条标出。
 
 ---
@@ -23,6 +23,8 @@
 - **仅剩 1 项待办**：Xcode **`MetalToolchain` 组件**（CoreSimulator 已复检修复；`.app` finalize 问题已随 CoreSimulator 修复，`.app` 仍手动组装）。启用带渲染的完整编辑器会话（P0 的可视化验证）需补装：`sudo xcodebuild -downloadComponent MetalToolchain`（需网络可达 Apple 域名，建议绕代理后执行）。
 
 **研发启动就绪状态**：Xcode、UE 5.8 引擎（**编译 + 引擎初始化完成**）、Python 依赖、Redis、模型凭据、Git 均已就绪；**唯一待办**是补装 Xcode 的 `MetalToolchain` 组件以启用**带渲染**的完整编辑器会话（MCP/命令行工具链基础不受影响），补齐后即可进入 **P0 地基**（AC-P0-01~06）。
+
+> **启动 Gate**：环境只是 Start-up Gate 之一（对应 [ops/STARTUP-GATE](./ops/STARTUP-GATE.md) G-01）；完整「满足什么 = 可正式启动」及「代码 ↔ AC 现状」见该文档 §1/§2。
 
 ---
 

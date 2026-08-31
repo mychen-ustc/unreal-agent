@@ -552,18 +552,13 @@ Orchestrator 检测到 parent_hash 变了
 
 ## 8. 落地路线图
 
-| 阶段 | 周期 | 目标 | 交付 |
-|---|---|---|---|
-| P0 地基 | 1–4 周 | MCP 打通、首个 Toolset、安全体系 | Agent 能安全改关卡并回滚 |
-| P1 核心工具链 | 5–12 周 | PCG + Level Designer + Lighting + Asset Retrieval + Build/Test + RAG | Agent 能程序化生成场景并自动编译测试 |
-| P2 策略与研究 | 13–18 周 | S1–S6 Strategy & Research Agent 上线 | 模糊方向 → 自动生成含市场/竞品/玩法/商业/技术/创意的完整提案 |
-| P3 多智能体 | 19–30 周 | 33 个 Agent + Orchestrator + 依赖 DAG 联调；垂直切片；评估组 + 回退闭环 | 端到端流水线跑通，从提案经垂直切片到可玩关卡 |
-| P4 实战打磨 | 31–42 周 | 外部生成模型接入、质量控制、评估组上线、真实内容生产 | 完整关卡由 AI 驱动生成；评估组多画像批判 + 横向对标通过；人工介入率 < 20% |
-| P5 发布准备 | 43–52 周 | 优化、打磨、本地化、平台适配 | Steam/EGS 可提交包体 |
-| P5+ 运营与后验 | 上线后 | 后验评估（立项预测 vs 实际）、运营期平衡调整、二次开发 | 预测偏差写回长期记忆改进立项；热更新/平衡调整自动触发 |
-| P6 UE6 迁移 | 2027+ | Verse + Scene Graph 适配 | 逻辑迁 Verse，MCP 架构复用 |
+> **阶段划分与里程碑的单一事实源已独立为 [ROADMAP.md](./ROADMAP.md)**（工程里程碑 P0–P6 + 商业/资产保护里程碑 C0–C3 双时间轴）。本章不再重复阶段表，避免口径漂移；这里只保留与架构演进相关的两条纪律。
 
-> 周期与 PRD §7 里程碑对齐。先在 disposable sandbox map 上验证 Agent，确认没问题了再进正式关卡。核心框架代码往 Verse 侧靠，为 UE6 做准备。PCG 和资源层天然可迁移，不用太担心。
+**架构演进纪律**：
+1. **引擎级定制走在 UE6 前**：本项目规划对 UE 做引擎级 AI 定制（推理嵌渲染/校验、定制 Agent 沙箱、扩展 PCG），这部分既是 P5+ 的工程蓝图，也是私有化黑盒（C3）的核心壁垒——见 [ROADMAP](./ROADMAP.md) §5 UE6 远瞻。
+2. **可迁移纪律**：核心框架代码往 Verse 侧靠（为 UE6 准备）；PCG 与资源层天然可迁移。先在各阶段用 disposable sandbox map 验证 Agent，确认没问题再进正式关卡。
+
+> 各阶段的「做什么/做到什么标准」见 [PRD §7](./AI_Agent_Game_Dev_PRD.md#7-里程碑与交付)·[§9](./AI_Agent_Game_Dev_PRD.md#9-验收标准)；「怎么做」见 TechDesign；参考游戏各阶段交付见 [reference-game §7](./reference-game.md#7-验收与交付标准)。
 
 ---
 

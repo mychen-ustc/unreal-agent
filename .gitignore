@@ -12,6 +12,15 @@ venv/
 .pytest_cache/
 .orchestrator-ui/
 
+# Orchestrator runtime data
+# LanceDB 长期记忆（可重建）
+orchestrator/memory/
+orchestrator/memory/current_manifest.json
+orchestrator/*.sqlite
+orchestrator/*.sqlite3
+orchestrator/durable/*.db
+orchestrator/durable/*.sqlite3
+
 # Node
 node_modules/
 
@@ -34,6 +43,9 @@ Saved/
 # IDE
 .idea/
 *.iml
+
+# 灵感归档（不纳入版本管理）
+ideas/
 
 # OS / editor
 *.swp

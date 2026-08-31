@@ -7,25 +7,45 @@
 
 ## 文档清单
 
+> 文档按「**为何做 → 做什么 → 怎么实现 → 何时做 → 交付形态**」组织。`ROADMAP.md` 是阶段划分与里程碑的单一事实源。
+
+| 类别 | 文档 | 说明 | 读者 |
+|---|---|---|---|
+| **方向/为何做** | [project-background-and-tech-selection.md](./docs/project-background-and-tech-selection.md) | 项目背景、引擎选型决策（UE 5.8）、商业生态、AI 整合对比。供 PRD 继承上下文。 | 全员（产品、技术、商务） |
+| **产品/做什么** | [AI_Agent_Game_Dev_PRD.md](./docs/AI_Agent_Game_Dev_PRD.md) | **产品需求文档**：AI 多 Agent 开发系统（产品本体）的功能需求、非功能需求、验收标准、里程碑、风险登记册。 | 产品、技术、测试 |
+| **架构/结构** | [AI_Agent_Toolchain_Architecture-unreal.md](./docs/AI_Agent_Toolchain_Architecture-unreal.md) | **核心架构**：四层金字塔、33 个领域与评估 Agent、MCP 工具平面（12 Toolset）、PCG 策略、编排层、变更传播 DAG。编排细节与路线图指向 Harness 与 ROADMAP。 | AI 技术专家、引擎工程师 |
+| **底座/运行时** | [agent-harness-selection-and-design.md](./docs/agent-harness-selection-and-design.md) | **Agent Harness/运行时底座**：能力包（MCP Server + Toolset + Common Spec Skill）为第一公民、编排核心为可选宿主；含跨宿主导入（§12）、商业交付与资产保护（§11：SaaS/私有化黑盒/引流蒸馏、Skill 分级）。 | AI 技术专家、后端工程师 |
+| **实现/怎么做** | [AI_Agent_Game_Dev_TechDesign.md](./docs/AI_Agent_Game_Dev_TechDesign.md) | **技术设计**：模块划分、接口契约、数据结构、并发模型、构建/部署、可观测性、可测试性、TDR。 | 工程师（AI、UE） |
+| **验证载体** | [reference-game.md](./docs/reference-game.md) | **参考游戏（验证载体）**：品类/规格/受众/内容需求/性能/验收/决策，端到端验证工具链能力。 | 产品、技术、测试 |
+| **阶段规划/何时做** | [ROADMAP.md](./docs/ROADMAP.md) | **项目路线图（单一事实源）**：工程里程碑 P0–P6（主时间轴）+ 商业/资产保护里程碑 C0–C3（并行）+ UE6 远瞻 + 联动评审。 | 全员（阶段 gate） |
+| **环境/启动** | [environment-setup.md](./docs/environment-setup.md) | 研发/运行环境搭建（Xcode、UE 5.8 源码版、Conda、Redis、模型凭据、Git）与本机核验清单。**启动研发前完成。** | 全员（接管环境者先读） |
+
+> 说明：`docs/game_ideas.md` 的灵感草稿已移至 [ideas/game-ideas.md](./ideas/game-ideas.md) 归档，不作为正式设计文档。
+
+### 启动/运维/安全/契约（`docs/ops/`）
+
+> 这组文档是「从设计走向正式启动」的工程底座，P0 启动前逐份启用（见 [STARTUP-GATE](./docs/ops/STARTUP-GATE.md) Gate 清单）。
+
 | 文档 | 说明 | 读者 |
 |---|---|---|
-| [project-background-and-tech-selection.md](./docs/project-background-and-tech-selection.md) | 项目背景、引擎选型决策、商业生态分析、AI 整合对比。供 PRD 继承上下文。 | 全员（产品、技术、商务） |
-| [AI_Agent_Toolchain_Architecture-unreal.md](./docs/AI_Agent_Toolchain_Architecture-unreal.md) | **核心架构文档**：四层金字塔设计、33 个领域与评估 Agent、MCP 工具平面（12 Toolset）、PCG 策略、编排层、变更传播 DAG、落地路线图。 | AI 技术专家、引擎工程师 |
-| [agent-harness-selection-and-design.md](./docs/agent-harness-selection-and-design.md) | **Agent Harness（编排/运行时底座）选型与技术设计**：剔除 LangGraph，自研最小编排核心 + Durable Execution 外挂 + LiteLLM；含 SaaS/多租户长期演进路线。TechDesign 编排选型的唯一事实源。 | AI 技术专家、后端工程师 |
-| [environment-setup.md](./docs/environment-setup.md) | **环境准备指南**：研发/运行环境搭建（Xcode、UE 5.8、Conda+依赖、Redis、模型凭据、Git）与本机差异核验清单。**启动研发前完成。** | 全员（接管环境者先读） |
-| [AI_Agent_Game_Dev_PRD.md](./docs/AI_Agent_Game_Dev_PRD.md) | **产品需求文档**：AI 多 Agent 开发系统（产品本体）的功能需求、非功能性需求、验收标准、里程碑、风险登记册；聚焦多 Agent 系统本身，参考游戏详情报单独文档。 | 全员（产品、技术、测试） |
-| [reference-game.md](./docs/reference-game.md) | **参考游戏文档（验证载体）**：参考游戏的品类选型、规格、受众、内容需求、性能与验收标准、相关产品决策。由 PRD 引用维护，避免稀释产品本体聚焦。 | 产品、技术、测试 |
-| [AI_Agent_Game_Dev_TechDesign.md](./docs/AI_Agent_Game_Dev_TechDesign.md) | **技术设计文档**：PRD 的技术落地层——模块划分、接口契约、数据结构、并发模型、构建/部署、可观测性、可测试性、TDR。 | 工程师（AI、UE） |
+| [STARTUP-GATE.md](./docs/ops/STARTUP-GATE.md) | **启动前置条件 Gate**：满足什么 = 可正式启动 P0；含「代码实现 ↔ PRD AC 现状对照」与首次提交约定。 | AI 技术专家 |
+| [GOVERNANCE-OPS.md](./docs/ops/GOVERNANCE-OPS.md) | **治理运行规程**：审批 SOP、回滚 SOP、数据/备份口径、负责人矩阵。 | 全员（审批人） |
+| [SECURITY-LICENSING.md](./docs/ops/SECURITY-LICENSING.md) | **安全·审计·授权计量**：审计 vs RAG 分离、License/计量标签、P0 预埋的商业钩子。 | 技术 + 产品/商务 |
+| [UE-ENGINE-WORKFLOW.md](./docs/ops/UE-ENGINE-WORKFLOW.md) | **UE 引擎工作流**：UE 源码分支、引擎级定制目录、构建/发布约定。 | 引擎工程师 |
+| [CONTRACTS.md](./docs/ops/CONTRACTS.md) | **契约与版本管理**：schema 版本化、破坏性变更、契约校验脚本、错误码管理。 | 工程师（AI、UE） |
 
 ---
 
 ## 阅读顺序建议
 
-1. **先读** [项目背景与选型](./docs/project-background-and-tech-selection.md) — 理解「为什么选 UE 5.8」
-2. **再读** [工具链架构方案](./docs/AI_Agent_Toolchain_Architecture-unreal.md) — 理解「怎么做」
-3. **然后读** [PRD](./docs/AI_Agent_Game_Dev_PRD.md) — 理解「做到什么标准」
-4. **接着读** [技术设计](./docs/AI_Agent_Game_Dev_TechDesign.md) — 理解「具体怎么实现」
-5. **最后读** [Agent Harness 选型与技术设计](./docs/agent-harness-selection-and-design.md) — 理解「编排/运行时底座怎么选、怎么落地、如何演进 SaaS/多租户」
+1. **方向**：[项目背景与选型](./docs/project-background-and-tech-selection.md) — 理解「为什么选 UE 5.8、要解决什么」
+2. **阶段**：[项目路线图](./docs/ROADMAP.md) — 先看「分几期、每期做什么、何时到哪」
+3. **产品**：[PRD](./docs/AI_Agent_Game_Dev_PRD.md) — 理解「做到什么标准」
+4. **架构**：[工具链架构方案](./docs/AI_Agent_Toolchain_Architecture-unreal.md) — 理解「系统怎么搭」
+5. **底座**：[Agent Harness 选型与设计](./docs/agent-harness-selection-and-design.md) — 理解「运行时底座怎么选、怎么跨宿主、怎么商业化交付」
+6. **实现**：[技术设计](./docs/AI_Agent_Game_Dev_TechDesign.md) — 理解「具体怎么实现」
+7. **验证**：[参考游戏](./docs/reference-game.md) — 理解「用什么验证这套系统能做出什么」
+8. **启动**：[环境准备](./docs/environment-setup.md) — 开发环境就绪后进入 P0 地基
 
 ## 当前代码进展（P0 地基 · Orchestrator 脚手架）
 
@@ -69,6 +89,7 @@ python -m orchestrator run --task "用 PCG 生成森林"   # 自动选 Skill + D
 - 架构图使用 **Mermaid** 语法，支持 GitHub / 多数 Markdown 渲染器
 - 中文为主，关键术语保留英文缩写（见架构文档术语表）
 - 文件名使用 **kebab-case**，不含空格（历史文件保留 Pascal_Snake 命名，新增文件统一 kebab-case）
+- **docs 根目录**放「方向/产品/架构/底座/实现/验证/阶段/环境」八份主文档；**docs/ops/** 放「启动/运维/安全/契约/UE 协作」这批工程底座文档；`ideas/` 为灵感归档（不纳入 git，见 `.gitignore`）
 
 ---
 

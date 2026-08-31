@@ -2,7 +2,7 @@
 
 项目代号：AI Agent 驱动的高品质游戏开发  
 关联 PRD：[AI_Agent_Game_Dev_PRD.md](./AI_Agent_Game_Dev_PRD.md)（v0.2）  
-关联前置文档：[项目背景与选型](./project-background-and-tech-selection.md)、[架构方案](./AI_Agent_Toolchain_Architecture-unreal.md)
+关联前置文档：[项目背景与选型](./project-background-and-tech-selection.md)、[架构方案](./AI_Agent_Toolchain_Architecture-unreal.md)、[项目路线图（阶段与里程碑）](./ROADMAP.md)
 
 > 本文档是 PRD 的技术落地层。PRD 定义「做什么」，本文档定义「怎么做」：模块划分、接口契约、数据结构、关键算法、并发模型、构建与部署、可观测性、可测试性。所有 PRD 编号（F-TOOL / Agent / AC 等）均在此给出实现映射。
 
@@ -102,7 +102,7 @@
 
 | 关注点 | 选型 | 理由 |
 |---|---|---|
-| **编排核心** | **自研最小编排核心**（asyncio 状态机 + 依赖传播 + stale + 回退）+ **可选 Durable Execution 外挂**（Temporal / Prefect / SQLite checkpoint） | 见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md)（本章节为唯一事实源，取代原 TDR-006 的 LangGraph）；图/状态机/回退为核心 IP 自研；长任务持久化外挂成熟引擎，支持单机到 SaaS 多租户演进 |
+| **编排核心** | **可选宿主之一**（自有薄宿主 = 自研最小编排核心 / `orchestrator/host.py`）+ **可选 Durable Execution 外挂**（Temporal / Prefect / SQLite checkpoint） | **能力包（UE MCP Toolset + Common Spec Skill）为第一公民，宿主可替换**；图/状态机/回退为核心增强但非能力包依赖；长任务持久化外挂成熟引擎；支持跨宿主接入与 SaaS 多租户演进（见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md) §1/v1.2、§11 跨宿主方案） |
 | Agent 运行时 | **Python 3.11+，asyncio** | 协程并发、AI 生态（LangChain/LlamaIndex）最成熟、与 UE Python Tool 同一语言 |
 | **运行入口（P0）** | **CLI + 结构化 JSON 日志**（`python -m orchestrator run --task "..."`） | 最小成本、可被 CI 调用、日志可喂回 LLM；Web Console / UE 面板为 P1+（§6.5） |
 | **模型接口（默认）** | **Anthropic Claude**（`claude-opus-4-5` 复杂 / `claude-sonnet-4-5` 主力 / `claude-haiku-4-5` 兜底）+ **LiteLLM 统一封装** | 代码/工具调用最强、长上下文、复杂推理领先；LiteLLM 满足"模型不锁定"（TDR-010） |
@@ -139,14 +139,14 @@ CLI (Typer + Rich)              ← 运行入口：结构化 JSON 日志
    └─ MCP Client (唯一写入者) ──▶ UE 5.8 MCP Server (127.0.0.1:8000)
 ```
 
-### 2.4 选型原则：框架是加速器，核心 IP 自研
+### 2.4 选型原则：能力包为第一公民，框架是加速器
 
-为避免"框架锁定"误解，明确边界：**LiteLLM、LanceDB、Durable Execution 引擎（Temporal/Prefect）均是可替换的适配层**，真正的核心 IP 是：
-- **自研 Toolset**（L2）—— 直接改 UE 引擎、模型无关
-- **自研 SharedState 契约 + Agent 角色定义**（L3）—— JSON Schema，与框架解耦
-- **自研编排语义**（L4）—— DAG 依赖传播、回退策略、空间分区、多租户维度（自研最小编排核心，作为核心 IP）
+为避免"框架锁定"误解，明确边界：**第一公民是能力包（L2 自研 Toolset + L3 自研 SharedState 契约 + Common Spec Skill）**；宿主可替换。真正的核心 IP 是：
+- **自研 Toolset**（L2）—— 直接改 UE 引擎、模型无关、宿主无关
+- **自研 SharedState 契约 + Skill 角色定义**（L3）—— JSON Schema + Common Spec，与框架/宿主解耦
+- **自研编排语义**（L4）—— DAG 依赖传播、回退策略、空间分区、多租户维度，是**自有宿主（`orchestrator/host.py`）的实现**，非能力包必需依赖
 
-**编排核心自研、不绑定任何 Agent 图框架**（已剔除 LangGraph）。长任务持久化/恢复通过统一的 `DurableProvider` 接口外挂成熟引擎（Temporal 生产级 / Prefect 轻量 / SQLite 单机）。完整选型与设计见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md)。更换编排实现仅影响 `orchestrator/` 内部（`dag.py`/`scheduler.py`/`durable/`），Agent / Toolset / SharedState 均不动。
+**编排宿主可替换、不绑定任何 Agent 图框架**（已剔除 LangGraph）。能力包可通过 `orchestrator/importers/` 注入 Claude Code / Codex / OpenClaw / Hermes 等主流宿主（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §11）。长任务持久化/恢复通过统一的 `DurableProvider` 接口外挂成熟引擎（Temporal 生产级 / Prefect 轻量 / SQLite 单机）。更换宿主/编排实现仅影响 `orchestrator/` 内部（`host.py`/`importers/`/`dag.py`/`scheduler.py`/`durable/`），Agent / Toolset / SharedState 均不动。
 
 ---
 
@@ -485,6 +485,8 @@ class DomainAgent(ABC):
 
 ## 6. L4 编排与治理层
 
+> 本节描述**自有薄宿主（`orchestrator/host.py`）**的实现。它是«可选宿主之一»；能力包（Toolset + Common Spec Skill）不依赖本层，可经 `orchestrator/importers/` 注入第三方宿主（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §11）。本层的 DAG / 调度 / 单写入者一致性在跨宿主时下沉到 MCP/Toolset 层。
+
 ### 6.1 Orchestrator 核心组件
 
 ```
@@ -694,14 +696,18 @@ repo/
 │   ├── Plugins/ToolsetRegistry/
 │   └── ...
 ├── orchestrator/              # L4 编排（Python）
-│   ├── cli.py                # CLI 入口（Typer）：run / plan / approve / rollback
-│   ├── dag.py                # 自研 DAG 引擎（依赖传播、stale、回退）
-│   ├── scheduler.py          # 自研 asyncio 调度器（拓扑 + 优先级 + 空间分区）
+│   ├── cli.py                # CLI 入口（Typer）：run / plan / approve / rollback / import
+│   ├── host.py                # 自有薄宿主（可选宿主之一）：接收指令、调度 Skill
+│   ├── importers/             # ★ 引流子集注入层（Claude Code / Codex / OpenClaw / Hermes / 自宿主）；只消费蒸馏子集
+│   ├── distiller.py           # ★ 能力蒸馏（§11.3）：完整能力包 → 对外 Demo/体验子集
+│   ├── dag.py                # 自研 DAG 引擎（依赖传播、stale、回退）※自有宿主实现
+│   ├── scheduler.py          # 自研 asyncio 调度器（拓扑 + 优先级 + 空间分区）※自有宿主实现
 │   ├── durable/              # DurableProvider 外挂（base / local_sqlite / temporal_adapter / prefect_adapter）
-│   ├── agents/                # 33 个领域 / 评估 Agent（生产 + 评估组分目录）
+│   ├── agents/                # 领域 Agent 实现（能力参考；调用模型迁移到 Common Spec Skill）
+│   ├── skills/                # ★ 33 个 Common Spec Skill（skill.yaml + prompt.md + steps.yaml + tools 白名单）
 │   ├── rag.py                # LanceDB 检索 + 注入
 │   ├── memory/                # LanceDB 持久化目录（gitignored）
-│   ├── models.py             # LiteLLM 封装 + 模型路由（fast/default/strong）
+│   ├── models.py             # LiteLLM 封装 + 模型路由（fast/default/strong；第三方宿主可复用其路由）
 │   ├── config/models.yaml    # 模型映射配置（TDR-010）
 │   └── mcp_client.py         # MCP Client（唯一写入者）
 ├── shared_state/              # SharedState（Git 事实源）game/ · strategy/ · eval/ · narrative/ · character/
@@ -730,7 +736,11 @@ push / PR
 
 - **开发期**：编排进程 + UE 编辑器同机（本机单人，符合 R-07）。
 - **CI 期**：UE 运行于容器/GitHub Runner（GPU 可选，用于渲染截图验证）。
-- **对外/团队协作（未来）**：编排服务化 + UE 远程 MCP（SSH 隧道 + Token），本期不做。
+- **商业交付形态（v1.3，详见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §11）**：
+  - **形态 A · 纯 SaaS（主推）**：UE 运行于云端多租户沙箱（§9 多租户），客户经 API/Web 使用，能力包不出境。
+  - **形态 B · 私有化黑盒**：把「精简 UE Runtime + 能力包 + 网关 + 计量」封装为隔离镜像/二进制交付客户机器/VPC，只暴露 MCP/HTTP 契约；真私有化、不依赖你的服务；更高价 + 协议约束（§11.2）。
+  - **形态 C · 引流/体验**：经 `distiller.py` 蒸馏出「简版能力子集」，由 `importers/` 注入第三方宿主作对外 Demo。完整能力包不走此通道。
+- **授权与计量**：统一计量标签（`license_key / tenant_id / duration`）随 Trace 落盘；SaaS 按租户配额计费，私有化黑盒容器内含 License 心跳与脱敏回传。
 
 ---
 
@@ -804,10 +814,10 @@ push / PR
 
 - **模型可替换**：默认 Claude（Opus/Sonnet/Haiku 三档），通过 **LiteLLM 封装**，换模型 = 改一个配置文件（`orchestrator/config/models.yaml`），满足"模型不锁定"（TDR-010、PRD §5.4）。
 - **向量库可替换**：LanceDB 通过 LangChain `VectorStore` 抽象接入，换 Qdrant/Milvus = 改适配层（TDR-009）。
-- **编排可替换/自研**：编排核心为自研最小编排核心（不绑定 Agent 图框架），长任务持久化经统一 `DurableProvider` 接口外挂可换引擎（Temporal/Prefect/SQLite）。Agent / Toolset / SharedState 不动（见 [Agent Harness 选型](./agent-harness-selection-and-design.md)）。
+- **编排可替换/自研**：编排宿主为可选（自有薄宿主 `host.py` + 自研最小编排核心，不绑定 Agent 图框架），长任务持久化经统一 `DurableProvider` 接口外挂可换引擎（Temporal/Prefect/SQLite）。**能力包（Toolset + Common Spec Skill）不依赖具体宿主**，可通过 `orchestrator/importers/` 注入 Claude Code / Codex / OpenClaw / Hermes 等（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §11）。Agent / Toolset / SharedState 不动。
 - **Toolset 版本适配**：适配层集中在 `orchestrator/adapters/ue_bridge.py`，MCP API 变更 = 改一个文件。
 - **文档覆盖**：每个 Tool 公开方法 100% docstring + JSON Schema 自动生成（CI 校验）。
-- **新增 Agent / Toolset**：定义 Schema + 注册即可，无需改编排层（PRD §5.5）。
+- **新增 Skill / Toolset**：定义 Common Spec Skill（`skills/<name>/`）+ 注册 Toolset 即可（PRD §5.5）；一个 Skill 注入所有宿主，无需改编排/宿主层。
 
 ### 12.2 UE6 迁移策略（TDR-004）
 
@@ -831,7 +841,9 @@ push / PR
 | TDR-004 | 逻辑优先 Verse，C++ 仅扩展 | UE6 Verse + Scene Graph 路线，降低迁移成本 | 全 C++/蓝图 | 采纳 |
 | TDR-005 | SharedState 以 Git JSON 为事实源 | 天然版本化 + 回滚，满足 §7 回滚目标 | 数据库 | 采纳 |
 | TDR-006 | ~~编排用 **Python + LangGraph** + 自研 DAG~~ | **已取代**：LangGraph 从底座剔除（长任务 durable 弱、API 稳定性风险、厂商引力，详见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §3） | 纯自研状态机 | **已取代 → TDR-012** |
-| TDR-012 | **编排核心自研最小编排核心** + 可选 Durable Execution 外挂（Temporal/Prefect/SQLite），不绑定 Agent 图框架 | 图/状态机/回退为核心 IP 自研；长任务持久化外挂成熟引擎；支持单机到 SaaS/多租户演进（TDR-H02/H03，见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §10） | LangGraph / 厂商 Agent SDK | 采纳 |
+| TDR-012 | **编排宿主可选**：能力包（Toolset + Common Spec Skill）为第一公民，宿主可替换；自有宿主 = 自研最小编排核心 + 可选 Durable Execution 外挂（Temporal/Prefect/SQLite），不绑定 Agent 图框架；引流子集可注入第三方宿主（§12），完整能力包走商业 A/B（§11） | 图/状态机/回退为**自有宿主**增强而非能力包依赖；长任务持久化外挂成熟引擎；支持单机到 SaaS/多租户与私有化演进（TDR-H02/H03/H09–H12，见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §10/§11/§12） | LangGraph / 厂商 Agent SDK | 采纳 |
+| TDR-013 | **能力包（UE MCP Server + Toolset + Common Spec Skill）为第一公民，宿主可替换**；Skill 按宿主无关 Common Spec 编写，经 `orchestrator/importers/` 注入 Claude Code / Codex / OpenClaw / Hermes 等（仅引流子集） | 聚焦开发 Tool / Skill / Prompt，避免绑定任一运行时；单写入者/空间分区/长任务下沉到 MCP/Toolset 层保证跨宿主一致；完整能力包只走商业 A/B，注入仅蒸馏子集（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) v1.2/v1.3、§11/§12） | 绑定单宿主 / 必选自研宿主 | 采纳 |
+| TDR-014 | **商业交付三形态**：纯 SaaS（A）主推、私有化黑盒（B，含完整 UE Runtime + 引擎级定制，规划内）可支持、Skill 注入（C）仅引流/体验；完整能力包不出境；能力蒸馏 `distiller.py` + **Skill 五级划分（Tier 0–4）+ 最小可用版（Tier ≤2 + Tier 0）**生成对外子集 | 付费形态下能力包（MCP+Toolset+Skill+数据）不出境，靠价值分层+License/计量+数据飞轮+协议约束兜底；按 Skill 价值定级以稳定裁剪最小可用版（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §11、TDR-H11/H12） | 向客户交付完整源码/资产 | 采纳 |
 | TDR-007 | MCP 绑 127.0.0.1 + 本机单人 | 满足 R-07，简化认证；多用户为 follow-up | Token 认证 | 本期采纳 |
 | TDR-008 | 全量编译放 nightly，不阻塞 PR | 缓解 R-03 长编译 | 分布式编译 | 采纳 |
 | TDR-009 | **RAG / 长期记忆用 LanceDB** | 嵌入式零运维、列式+磁盘索引性能优于 ChromaDB；支持向量+全文+元数据混合检索；数据随项目走 | ChromaDB / Qdrant | 采纳 |

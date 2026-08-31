@@ -2,7 +2,7 @@
 
 项目代号：AI Agent 驱动的高品质游戏开发  
 版本：v0.2 定稿  
-前置文档：[项目背景与技术选型](./project-background-and-tech-selection.md)、[架构方案](./AI_Agent_Toolchain_Architecture-unreal.md)
+前置文档：[项目背景与技术选型](./project-background-and-tech-selection.md)、[架构方案](./AI_Agent_Toolchain_Architecture-unreal.md)、[项目路线图（阶段与里程碑）](./ROADMAP.md)
 
 > 本文 PRD 聚焦**多 Agent 游戏开发系统（产品本体）**的功能、非功能、里程碑与验收需求。用于端到端验证系统能力的"参考游戏"仅在测试/验证环节作为产出物引用，其选型、规格、内容与验收标准统一维护在 [参考游戏（验证载体）](./reference-game.md)。
 
@@ -275,6 +275,8 @@ Agent 间通信全部走 SharedState JSON Schema，不传自由文本。每条�
 ---
 
 ## 7. 里程碑与交付
+
+> **阶段划分与里程碑的单一事实源为 [ROADMAP](./ROADMAP.md)**（工程 P0–P6 + 商业 C0–C3 双时间轴 + 联动评审）。本章列出工程轴的阶段目标与关键交付；周期口径以 ROADMAP / 本文档为准一致，未来如需调整阶段边界优先更新 ROADMAP。
 
 | 阶段 | 周期 | 目标 | 关键交付 |
 |---|---|---|---|
