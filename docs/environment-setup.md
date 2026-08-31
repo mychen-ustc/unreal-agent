@@ -11,16 +11,17 @@
 当前机器（Apple M5 · 24 GB RAM · 685 GB 空闲磁盘 · macOS 26.5）**满足本阶段研发运行基线**。
 
 **已完成的环境准备**（见 §12 进度记录）：
+- ✅ **UE 5.8 源码版编译安装完成**：`/Users/Shared/UnrealEngine-5.8-source`（5.8 分支源码 3.8GB → 依赖 + 编译产物约 120GB）。`Build.sh UnrealEditor Mac Development` **5726/5726 全部通过**（567 个模块 dylib），主程序 `Engine/Binaries/Mac/UnrealEditor` 已产出，`UnrealEditor.app` 已手动组装+ad-hoc 签名；**引擎运行时实测可启动**（详见 §12.1）。
+- ✅ **Xcode 26.6 完整版 + 许可已接受**，`xcode-select` 指向正确（完整版）。
 - ✅ **Python 环境就绪**：conda `unreal-agent` 环境（Python 3.13.14）+ 全部核心依赖（langgraph / litellm / mcp / lancedb / opentelemetry / pytest / pydantic 等，已 import 验证）。
 - ✅ **模型凭据已配置并连通验证**：`.env` 已填 `LLM_BASE_URL` / `LLM_API_KEY`，LiteLLM 实测成功调用 DeepSeek `deepseek-chat` 并返回响应。
 - ✅ **Redis 就绪**：brew 安装 v8.10.1 并已启动，`redis-cli ping` → `PONG`（无认证要求）。
 - ✅ **Git 身份已配置**：`user.name=mychen-ustc`、`user.email=136499614@qq.com`。
 
-**仍待人工处理**（2 项，需 App Store / Epic Launcher 图形登录授权，无法纯 CLI 完成）：
-1. **UE 5.8 引擎本体**（仅装了 Epic Launcher 本体）——阻塞 P0 所有 MCP/PCG 验证（AC-P0-01~06）。
-2. **Xcode 完整版**（现在只有 Command Line Tools + clang 21）——阻塞 UE C++ Toolset / Gameplay 编译与 Live Coding（P1+）。
+**已知遗留问题（1 项，不阻塞引擎使用）**：
+- 本机 Xcode 的 **`CoreSimulator`/simulator 组件未完整安装**，导致 xcodebuild 无法加载 `IDESimulatorFoundation`，UBT 的「`.app` 自动打包」失败（已手动组装 `.app` 规避；拉直二进制即可运行引擎）。若要彻底修复：`sudo xcodebuild -runFirstLaunch` 或 `xcodebuild -downloadPlatform iOS`（需网络可达 Apple 域名，建议绕代理后执行）。详见 §12.1。
 
-安装步骤见 §3（Xcode）与 §4（UE 5.8）。
+**研发启动就绪**：Xcode、UE 5.8 引擎、Python 依赖、Redis、模型凭据、Git 全部就绪，可进入 **P0 地基**（AC-P0-01~06）。
 
 ---
 
@@ -32,8 +33,8 @@
 |---|---|---|---|---|
 | E-01 | 硬件 | UE 5.8 编辑器能跑、可增量编译 | Apple M5 / 24 GB RAM / 685 GB 空闲 / Docker 可用 | 🟡 满足基线，见 §2 |
 | E-02 | 操作系统 | macOS（UE 5.8 官方支持） | macOS 26.5.1 (arm64) | ✅ |
-| E-03 | 完整 Xcode + CLT | UE C++ 编译/Live Coding 必需 | 仅 Command Line Tools（clang 21） | ❌ 需装完整 Xcode |
-| E-04 | UE 5.8 LTS 引擎 | 二进制版 + Launcher 管理 | **未安装**（仅 Launcher 本体） | ❌ 需安装 |
+| E-03 | 完整 Xcode + CLT | UE C++ 编译/Live Coding 必需 | Xcode 26.6（完整版）+ 许可已接受，`xcode-select`= `/Applications/Xcode.app/...`；SDK 26.5 | ✅ 已完成（*simulator 组件未装，非阻塞*） |
+| E-04 | UE 5.8 LTS 引擎 | 源码编译安装（§4.1） | `/Users/Shared/UnrealEngine-5.8-source`，`UnrealEditor` 5726/5726 编译通过，运行时实测可启动 | ✅ 已完成 |
 | E-05 | Python 运行时 | 3.11+（用 3.11/3.12/3.13 均可） | conda `unreal-agent` env = Python 3.13.14 | ✅ 已完成 |
 | E-06 | Python 依赖 | langgraph / litellm / mcp / pytest / lancedb / opentelemetry / typer / rich | 已全部装进 `unreal-agent` env（import 验证通过） | ✅ 已完成 |
 | E-07 | Redis | SharedState 运行时缓存 | v8.10.1 已装并启动，`ping` → PONG | ✅ 已完成 |
@@ -312,10 +313,12 @@ python -m orchestrator run --task "在关卡中放置一个 Cube"
 
 | 项 | 现状 | 处置 / 状态 |
 |---|---|---|
-| Xcode | Xcode 26.6（完整版）已装，许可已接受，`xcode-select` 指向 `/Applications/Xcode.app/Contents/Developer` | ✅ 已完成 |
+| Xcode | Xcode 26.6（完整版）已装，许可已接受，`xcode-select` 指向 `/Applications/Xcode.app/Contents/Developer`（simulator 组件未装，非阻塞） | ✅ 已完成 |
 | UE 5.8 源码 | `EpicGames/UnrealEngine` `5.8` 分支浅克隆到 `/Users/Shared/UnrealEngine-5.8-source`（3.8GB / 223,996 文件，HEAD `ff8421f2`）| ✅ 源码就位 |
-| UE 依赖下载 | `./Setup.sh --force` 运行中（后台，日志 `/Users/Shared/ue-setup.log`），GitDependencies 下 ~31GB 第三方依赖，进度见 §12.1 | 🟡 后台进行，需数小时~数十小时 |
-| UE 后续构建 | `./GenerateProjectFiles.command` → 编译（Mac Build.sh / xcodebuild UE5Editor） | ⏳ 依赖下载完成后 |
+| UE 依赖下载 | `./Setup.sh --force` → **100%**（31113/31113 MiB；ThirdParty ≈ 14GB） | ✅ 已完成 |
+| UE 生成工程 | `./GenerateProjectFiles.command` → Succeeded | ✅ 已完成 |
+| UE 编译 | `Build.sh UnrealEditor Mac Development` → **5726/5726 通过**（567 模块 dylib） | ✅ 已完成 |
+| UE `.app`/运行 | 手动组装 `UnrealEditor.app`（ad-hoc 签名）；`UnrealEditor-Cmd` 实测可启动 | ✅ 可运行（详见 §12.1） |
 | Python env | conda `unreal-agent` = 3.13.14 | ✅ 已创建 |
 | 依赖 | langgraph 1.2.11 / litellm 1.98.0 / mcp 2.1.1 / lancedb 0.37.1 / otel 1.44 / pytest / pydantic | ✅ 已装入 `unreal-agent`，import 通过 |
 | Redis | v8.10.1 运行中（`127.0.0.1:6379`，无认证） | ✅ 已装并启动，`ping` → PONG |
@@ -324,38 +327,47 @@ python -m orchestrator run --task "在关卡中放置一个 Cube"
 | Docker | 29.6 可用 | ✅ 可选（CI 期才用） |
 | macOS / HW | M5 / 24GB / 685GB | ✅ 满足基线 |
 
-> **当前待处理**：UE 5.8 源码版依赖下载在后台进行（§12.1）；完成依赖后需编译引擎。
+> **当前状态**：UE 5.8 源码版安装完成（编译 5726/5726 通过、`.app` 已组装、引擎运行时实测可启动）。详见 §12.1。
 
 ---
 
-## 12.1 UE 5.8 源码安装：进行中记录
+## 12.1 UE 5.8 源码安装：进度记录
 
 > 决策：源码编译安装（§4.1 主路径）。**Xcode 已完成**（26.6 + 许可已接受），Epic GitHub 源码授权已就绪（SSH 可访问）。
 
-| 步骤 | 状态 | 命令 / 结果 |
+| 步骤 | 状态 | 结果 |
 |---|---|---|
-| 克隆源码 | ✅ 完成 | `5.8` 分支 → `/Users/Shared/UnrealEngine-5.8-source`（3.8GB，HEAD `ff8421f2`） |
-| 下载依赖 | 🟡 后台进行 | `./Setup.sh --force`，日志 `/Users/Shared/ue-setup.log`，需 ~31GB（现约 3%） |
-| 生成工程 | ⏳ 待依赖完成 | `./GenerateProjectFiles.command` |
-| 编译 | ⏳ 待上一步 | `Engine/Build/BatchFiles/Mac/Build.sh UE5Editor Mac Development` |
+| 克隆源码 | ✅ 完成 | `5.8` 分支 → `/Users/Shared/UnrealEngine-5.8-source`（HEAD `ff8421f2`） |
+| 下载依赖 | ✅ 完成 | `./Setup.sh --force` → **100%**（31113/31113 MiB；`Engine/Binaries/ThirdParty` ≈ 14GB） |
+| 生成工程 | ✅ 完成 | `./GenerateProjectFiles.command` → Succeeded（产出 `UE5 (Mac).xcworkspace`） |
+| 编译 | ✅ 完成 | `Build.sh UnrealEditor Mac Development` → **5726/5726 全部步骤通过**（567 模块 `.dylib` 均已链接） |
+| `.app` 打包 | ✅ 手动完成 | 引擎本体的 UBT「finalize .app」因本机 Xcode simulator 组件缺失而失败；已**手动组装 + ad-hoc 签名** `UnrealEditor.app`（结构/签名校验通过，见下） |
+| 验证运行 | ✅ 可运行 | `UnrealEditor-Cmd` 实测启动成功：打开共享内存、fork 并成功启动 Trace 守护进程、spawn `UnrealEditorServices`（见 §12.1 说明） |
 
-**查看下载进度**：
+> **目标名**：UE 5.8 编辑器 target 为 **`UnrealEditor`**（非 `UE5Editor`），编译命令 `Build.sh UnrealEditor Mac Development`。
 
+**引擎产物**：
 ```bash
-grep -oE "[0-9.]+/31113.1 MiB" /Users/Shared/ue-setup.log | tail -1      # 已下载 / 总量
+/Users/Shared/UnrealEngine-5.8-source/Engine/Binaries/Mac/UnrealEditor          # 编辑器主程序
+/Users/Shared/UnrealEngine-5.8-source/Engine/Binaries/Mac/UnrealEditor-Cmd     # 无头/commandlet 程序
+/Users/Shared/UnrealEngine-5.8-source/Engine/Binaries/Mac/UnrealEditor.app     # 已组装+ad-hoc 签名的 .app
+/Users/Shared/UnrealEngine-5.8-source/Engine/Binaries/Mac/libUnrealEditor-*.dylib  # 567 个模块动态库
 ```
 
-**依赖下载完成后**（后台日志显示完成）继续：
+**关于 `.app` finalize 与 Xcode simulator**（本机已知问题）：
+- UE 在 Mac 上由 UBT 调用 `xcodebuild` 完成 `.app` 打包；本机 `xcodebuild` 因 **`CoreSimulator.framework` 缺失**无法加载插件而失败（`-runFirstLaunch` 亦卡住，因需写入 `/Library` + 可能需访问 Apple 组件服务器）。
+- 因此**手动**补齐了 `UnrealEditor.app`：`Contents/MacOS/UnrealEditor`（复制主程序）、`Info.plist`（5.8.2）、`PkgInfo`、`Resources` 图标，并 `codesign --force -s -`（ad-hoc，无证书）。
+- 该问题**不影响引擎可用性**（拉直二进制即可运行）；仅影响 Finder 双击「.app」。若要彻底修复：`sudo xcodebuild -runFirstLaunch` 或 `xcodebuild -downloadPlatform iOS`（需网络可达 Apple 域名，建议绕过代理后执行）。
 
+**验证引擎可运行**（无头/commandlet）：
 ```bash
 cd /Users/Shared/UnrealEngine-5.8-source
-./GenerateProjectFiles.command
-./Engine/Build/BatchFiles/Mac/Build.sh UE5Editor Mac Development
-# 期望产物：Engine/Binaries/Mac/UE5Editor
+Engine/Binaries/Mac/UnrealEditor-Cmd -version
+# 正常会进入引擎运行时（建共享内存、fork 成功、可继续加载/执行）
 ```
 
-> 说明：UESetup 的 GitDependencies 会缓存已下载依赖（断点续传），中断后重跑 `./Setup.sh --force` 可续。
-> 若下载速率过低（代理限速），可考虑为 `*.unrealengine.com` / GitDependencies 目标走直连或换线路后重跑。Windows/Linux 分发包见引擎内附带 `README`。
+> 说明：编译日志 `/Users/Shared/ue-build.log`。编译本可后台增量续跑；已在修复 1 处 `-Werror` 编译错误后全部通过。
+> 若编译报 SDK/Xcode 版本不满足，确保 Xcode 26.6 的 `xcode-select` 指向完整版（`/Applications/Xcode.app/...`）。
 
 ---
 
