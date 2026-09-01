@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unreal-orchestrator"
+version = "0.1.0"
+description = "AI Agent 驱动 UE 研发的 L4 编排层（Orchestrator）— P0 地基脚手架"
+requires-python = ">=3.11"
+dependencies = [
+    "typer>=0.20",
+    "rich>=14.0",
+    "litellm>=1.98.0",
+    "mcp>=1.0",
+    "pydantic>=2.13",
+    "python-dotenv>=1.2",
+    "PyYAML>=6.0",
+    "lancedb>=0.37",
+    "httpx>=0.28",
+    "opentelemetry-api>=1.44",
+    "opentelemetry-sdk>=1.44",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9",
+    "pytest-asyncio>=1.4",
+]
+
+[tool.setuptools.packages.find]
+include = ["orchestrator*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[project.scripts]
+orchestrator = "orchestrator.cli:app"

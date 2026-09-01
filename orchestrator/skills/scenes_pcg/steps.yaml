@@ -1,0 +1,19 @@
+# scenes_pcg 内部步骤（对应 DAG 节点）
+# 以领域角色内部流程为例：规划 → 生成 → 验证（依赖 / 回退阈值）
+- id: plan_spec
+  shared_state_refs: ["/level/blockout.json", "/art/style_guide.json"]
+  severity: read_only
+  tier: default
+
+- id: generate_graph
+  dependencies: [plan_spec]
+  shared_state_refs: ["/Generated/PCG/", "/eval/content.json"]
+  severity: mutating
+  tier: strong
+  partition: north_zone
+
+- id: validate
+  dependencies: [generate_graph]
+  shared_state_refs: ["/Generated/PCG/"]
+  severity: read_only
+  tier: fast

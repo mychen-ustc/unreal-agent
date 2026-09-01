@@ -1,0 +1,17 @@
+# Orchestrator（L4 编排层）依赖 —— 与 pyproject.toml 对齐
+# 安装：conda activate unreal-agent && pip install -r orchestrator/requirements.txt
+typer>=0.20
+rich>=14.0
+litellm>=1.98.0
+mcp>=1.0
+pydantic>=2.13
+python-dotenv>=1.2
+PyYAML>=6.0
+lancedb>=0.37
+httpx>=0.28
+opentelemetry-api>=1.44
+opentelemetry-sdk>=1.44
+
+# dev / 测试
+pytest>=9
+pytest-asyncio>=1.4

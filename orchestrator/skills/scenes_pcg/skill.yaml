@@ -1,0 +1,26 @@
+# Skill 元数据：Scenes / PCG（场景与程序化内容）
+name: scenes_pcg
+description: "按 JSON 规格生成/修改 PCG Graph 资产，产出生物群系场景（PRD 参考游戏 §4.2）"
+default_tier: default
+
+input_schema:
+  type: object
+  required: [biome, graph_path]
+  properties:
+    biome:       { type: string, description: "生物群系标识，如 temperate_forest" }
+    graph_path:  { type: string, description: "/Game/Generated/PCG/..." }
+    nodes:       { type: array, description: "PCG 节点规格" }
+    bounds:      { type: object, description: "{min,max} 包围盒" }
+
+output_schema:
+  type: object
+  properties:
+    asset_path:  { type: string }
+    node_count:  { type: integer }
+
+tool_whitelist:
+  - pcg_generate_graph
+  - pcg_validate
+  - place_actor
+
+risk: mutating

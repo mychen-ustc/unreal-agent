@@ -1,0 +1,9 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.8",
+	"Category": "",
+	"Description": "AI Agent 驱动的 UE 研发最小验证项目",
+	"TargetPlatforms": [
+		"Mac"
+	]
+}
