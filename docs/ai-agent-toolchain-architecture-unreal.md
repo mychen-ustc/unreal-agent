@@ -6,9 +6,9 @@
 
 ## 概述
 
-这套架构的核心不是"用 AI 写代码"，而是用开放标准（MCP）加自研编排，把一系列 AI Agent 组成一支可治理、可验证、可回滚的工程团队。UE 在这里是被驱动的执行引擎，不是把人锁住的平台。
+这套架构的核心不是"用 AI 写代码"，而是用开放标准（MCP）把**能力包**（UE Toolset + Common Spec Skill）组织成可治理、可验证、可回滚的工程能力，由宿主 Agent 按需驱动。UE 在这里是被驱动的执行引擎，不是把人锁住的平台。
 
-投入重点在两层：L2（自研 Toolset）和 L4（编排与治理）。这两层全部源码自研，不绑定任何模型供应商，UE6 迁移时可以平滑复用。L3 的 33 个领域与评估 Agent 覆盖从市场调研到打包发布及上线后复盘再开发的完整工业管线。
+**第一公民是「能力包」**：L2 自研 Toolset（12 个）+ L3 领域 / 评估能力（33 个 Common Spec Skill）。它们宿主无关、源码自研、不绑定模型供应商，UE6 迁移时可平滑复用。**编排宿主是可选/可替换的**：默认自有薄宿主（`orchestrator/host.py`），也可经 `importers/` 注入 Claude Code / Codex / OpenClaw / Hermes 等第三方宿主（详见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §1/§11/§12）。
 
 ---
 
@@ -16,13 +16,14 @@
 
 - [0. 设计原则](#0-设计原则)
 - [1. 总体架构](#1-总体架构)
-- [2. 领域智能体设计](#2-领域智能体设计)
+- [2. 领域能力设计（33 个 Common Spec Skill）](#2-领域能力设计33-个-common-spec-skill)
   - [2.1 策略与研究组](#21-策略与研究组strategy--research)
   - [2.2 预生产组](#22-预生产组)
   - [2.3 生产组](#23-生产组)
   - [2.4 验证与交付组](#24-验证与交付组)
-  - [2.5 Agent 间通信](#25-agent-间通信)
-  - [2.6 变更传播](#26-变更传播上游改了下游要知道)
+  - [2.5 评估组](#25-评估组evaluation)
+  - [2.6 Skill 间通信（SharedState 契约）](#26-skill-间通信sharedstate-契约)
+  - [2.7 变更传播：上游改了，下游要知道](#27-变更传播上游改了，下游要知道)
 - [3. MCP 工具平面](#3-mcp-工具平面)
 - [4. PCG 与 AI 的结合](#4-pcg-与-ai-的结合)
 - [5. 外部生成能力](#5-外部生成能力)
@@ -40,17 +41,17 @@
 
 三条底线，所有架构取舍都锚在这上面。
 
-**原则一：Agent 只生成构建脚本，不直接产出最终资源**
+**原则一：能力产出构建脚本，不直接产出最终资源**
 
-Agent 不凭空造 .uasset。它产出的是 PCG 图、编辑器 Python 脚本、C++/Verse 代码、DataAsset。这些是构建脚本，最终资源由引擎在本地确定性地编译生成。好处很直接：资源可以进 Git、可以 diff、可以复现。
+Skill / Agent 不凭空造 .uasset。产出的是 PCG 图、编辑器 Python 脚本、C++/Verse 代码、DataAsset。这些是构建脚本，最终资源由引擎在本地确定性地编译生成。好处很直接：资源可以进 Git、可以 diff、可以复现。
 
 **原则二：每一步都进闭环验证**
 
-Generation → Compile → Run → Screenshot → Fix。Agent 每次改动之后必须自检——截图回传、日志解析、跑自动化测试。AutoUE 的论文已经验证了这件事：把自动化游玩测试嵌进生成循环里，是让产物真正可玩的关键。
+Generation → Compile → Run → Screenshot → Fix。每次改动之后必须自检——截图回传、日志解析、跑自动化测试。AutoUE 的论文已经验证了这件事：把自动化游玩测试嵌进生成循环里，是让产物真正可玩的关键。
 
 **原则三：源码可控是底线**
 
-引擎级改造——比如把推理嵌进渲染管线、定制 Agent 沙箱、扩展 PCG 框架——这些只有拿着完整 UE 源码才做得动。工具链本体（Orchestrator、RAG、评测系统）也必须源码自研，不依赖任何闭源 AI 产品。
+引擎级改造——比如把推理嵌进渲染管线、定制 Agent 沙箱、扩展 PCG 框架——这些只有拿着完整 UE 源码才做得动。工具链本体（能力包 Toolset / Skill、RAG、评测系统、可选自有宿主）也必须源码自研，不依赖任何闭源 AI 产品。
 
 ---
 
@@ -60,31 +61,31 @@ Generation → Compile → Run → Screenshot → Fix。Agent 每次改动之后
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  L4  自研 Orchestrator（编排 + 治理）                         │
-│  依赖 DAG 引擎 / Reviewer / QA                                │
+│  L4  编排宿主（可选/可替换）                                   │
+│      自有薄宿主 host.py · DAG/回退 · 或第三方宿主（importers）  │
 ├─────────────────────────────────────────────────────────────┤
-│  L3  领域智能体层（33 个 Agent：生产 + 评估）                 │
-│  预生产组 / 生产组 / 验证与交付组                              │
-│  统一通过 MCP 协议调用工具，模型可随时替换                     │
+│  L3  领域能力（33 个 Common Spec Skill：生产 + 评估）          │
+│      策略与研究 / 预生产 / 生产 / 验证与交付 / 评估            │
+│  （领域角色 = Skill 能力定义；宿主调度，非 sub-agent 网络）      │
 ├─────────────────────────────────────────────────────────────┤
-│  L2  MCP 工具平面（Toolset Registry）                         │
-│  12 个自研 Toolset + 内置 Toolsets + File Sandbox + 审批门禁   │
+│  L2  MCP 工具平面（能力包执行端 · 唯一写入者）                  │
+│      12 个自研 Toolset + 内置 Toolsets + File Sandbox + 审批门禁│
 ├─────────────────────────────────────────────────────────────┤
 │  L1  Unreal Engine 5.8（完整源码 + 可重编译）                 │
-│  Editor / PCG / Nanite / Lumen / Verse / Source Control       │
+│      Editor / PCG / Nanite / Lumen / Verse / Source Control   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-L2、L3、L4 全部走开放标准加自研代码。UE 是被驱动的执行引擎，换模型、升 UE6、甚至换引擎，影响范围都被压在 L2 的适配层里。
+L1–L3 是**能力包**（走开放标准加自研代码，宿主无关）；L4 是**可选宿主**，可换可不换。UE 是被驱动的执行引擎，换模型、换宿主、升 UE6、甚至换引擎，影响范围都压在 L2 的适配层里。跨宿主时「单写入者 + 空间分区 + 长任务」一致性**下沉到 MCP / Toolset 层**（见 [Agent Harness](./agent-harness-selection-and-design.md) §12）。
 
 ```mermaid
 graph TB
-    subgraph L4["L4 · Orchestrator（编排 + 治理）"]
-        Reviewer["Reviewer"]
-        QA["QA"]
-        DAG["依赖 DAG 引擎"]
+    subgraph L4["L4 · 编排宿主（可选；自有 host.py 或第三方）"]
+        Reviewer["Reviewer（评估 Skill）"]
+        QA["QA（评估 Skill）"]
+        DAG["DAG 引擎（自有宿主驱动）"]
     end
-    subgraph L3["L3 · 领域智能体（33 个：生产 + 评估）"]
+    subgraph L3["L3 · 领域能力（33 个 Common Spec Skill）"]
         subgraph Strategy["策略与研究组"]
             S1["S1 Market Analyst"]
             S2["S2 Competitive Intel"]
@@ -159,11 +160,13 @@ graph TB
 
 ---
 
-## 2. 领域智能体设计
+## 2. 领域能力设计（33 个 Common Spec Skill）
 
-AutoUE（ACL'26 Findings）用 5 个 Agent 跑通了端到端生成 3D 游戏的流程，证明这条路可行。我们在这个基础上，对照工业游戏管线的实际环节，扩展到 **33 个 Agent**，按生产阶段分组。Agent 之间不传自然语言，只传结构化的 JSON 规格（SharedState）。
+> **范式说明**：本层的 33 个领域角色在本系统中作为 **Common Spec Skill**（`skills/<name>/`，宿主无关）存在，由宿主按任务调度——**不是常驻平级 sub-agent 网络**（范式见 [Agent Harness](./agent-harness-selection-and-design.md) §1）。下文「Agent」指 Skill 的能力定义（输入/输出/工具白名单），SharedState 路径按领域组织（`shared_state/<skill>/...`）；一组 Skill 之间的数据依赖即图下方的 SharedState 契约。
 
-> 生产型 Agent（策略 S1–S6 / 预生产 / 生产 / 验证与交付）负责把游戏做出来；**评估型 Agent**（体验评估 E1–E6 + UX/Playtest 研究者 + 叙事内容 W1 + 技术美术 TA）负责批判性地找出问题、保证品质与商业可行。评估不是交付末尾的一次性检查，而是可在任意里程碑触发的反馈闭环，且与生产的读写严格分离。
+AutoUE（ACL'26 Findings）用 5 个 Agent 跑通了端到端生成 3D 游戏的流程，证明这条路可行。我们在这个基础上，对照工业游戏管线的实际环节，把能力扩展到 **33 个领域/评估 Skill**，按生产阶段分组。Skill 之间不传自然语言，只传结构化的 JSON 规格（SharedState）。
+
+> 生产型 Skill（策略 S1–S6 / 预生产 / 生产 / 验证与交付）负责把游戏做出来；**评估型 Skill**（体验评估 E1–E6 + UX/Playtest 研究者 + 叙事内容 W1 + 技术美术 TA）负责批判性地找出问题、保证品质与商业可行。评估不是交付末尾的一次性检查，而是可在任意里程碑触发的反馈闭环，且与生产的读写严格分离。
 
 ### 2.1 策略与研究组（Strategy & Research）
 
@@ -267,11 +270,11 @@ Profiler 跑一遍 GPU 和 CPU profiling，标出超标区域，反馈给 Scene 
 
 配套的 UX / Playtest 研究者与评估用 Toolset（PlaytestToolset、BenchmarkToolset）、`eval/*` 数据契约和回退规则见 [技术设计](./ai-agent-game-dev-tech-design.md) §5.2 / §4.3。
 
-### 2.6 Agent 间通信
+### 2.6 Skill 间通信（SharedState 契约）
 
-所有 Agent 之间的交接走 SharedState——结构化的 JSON，附 Schema 约束。不传自由文本，因为自由文本不可靠、不可校验、不可追踪。
+所有 Skill 之间的交接走 SharedState——结构化的 JSON，附 Schema 约束。不传自由文本，因为自由文本不可靠、不可校验、不可追踪。
 
-Level Designer 给 Scene Agent 的 Blockout 规格：
+Level Designer Skill 给 Scene Skill 的 Blockout 规格：
 
 ```json
 {
@@ -328,9 +331,9 @@ Scene Agent 给 Gameplay Agent 的交互物规格：
 
 ### 2.7 变更传播：上游改了，下游要知道
 
-工业管线里最头疼的事：上游改了一个坐标，下游所有依赖这个坐标的产出都可能失效。传统做法靠人工通知，这里用 Orchestrator 的依赖 DAG 来自动处理。
+工业管线里最头疼的事：上游改了一个坐标，下游所有依赖这个坐标的产出都可能失效。传统做法靠人工通知。在自有宿主下由宿主用依赖 DAG 自动处理；在第三方宿主下，该一致性**下沉到 MCP / SharedState 层**（见 [Agent Harness](./agent-harness-selection-and-design.md) §12）。
 
-每条 SharedState 都带 `version`（semver）和 `parent_hash`（上游产物的 SHA-256）。Orchestrator 维护一张 Agent 间的有向无环依赖图，大概长这样：
+每条 SharedState 都带 `version`（semver）和 `parent_hash`（上游产物的 SHA-256）。宿主（或共享的 SharedState 层）维护一张 Skill 间的有向无环依赖图，大概长这样：
 
 ```
 Concept Artist ──→ 3D Asset Gen ──→ Scene/PCG ──→ Lighting ──→ Reviewer
@@ -338,9 +341,9 @@ Level Designer ──→ Scene/PCG ──→ Gameplay ──→ UI ──→ Rev
 Data Agent ──→ Gameplay ──→ UI
 ```
 
-当上游 Agent 产出新版本时，Orchestrator 自动把下游的缓存标记为 stale。下游 Agent 收到通知后先做 diff——如果变更不影响自己（比如只改了一个无关坐标），就跳过；如果影响，就重跑。传播深度限制在 3 层，避免一个改动触发整个管线重跑。
+当上游 Skill 产出新版本时，宿主（或 SharedState 层）自动把下游的缓存标记为 stale。下游 Skill 收到通知后先做 diff——如果变更不影响自己（比如只改了一个无关坐标），就跳过；如果影响，就重跑。传播深度限制在 3 层，避免一个改动触发整个管线重跑。
 
-多个 Agent 同时写同一个关卡时，按坐标范围分区（West / East / North / Central），共享区单独协调，避免互相踩。
+多个 Skill 同时写同一个关卡时，按坐标范围分区（West / East / North / Central），共享区单独协调，避免互相踩。
 
 ---
 
@@ -437,7 +440,7 @@ UE MCP 没有认证、串行执行、Agent 可能改错关卡或重复创建对�
 2. 审批分级：`read_only`（查询）自动放行；`mutating`（可回退的改动）轻量审批；`destructive`（删除/发布）强制人工确认
 3. 版本控制：Agent 每次改动后自动 commit 加 diff 报告，出问题可以一键 revert
 4. 超时隔离：每次 Tool 调用包 30 秒超时；先在 disposable sandbox map 上验证，不要直接在正式关卡上试
-5. 单写入者：Game Thread 串行这一条，编排层保证同一时刻只有一个 Agent 在写
+5. 单写入者：Game Thread 串行这一条，由 UE MCP Server / Toolset 层（能力包）保证同一时刻只有一个写入者——无论自有宿主还是第三方宿主都经此唯一通道（跨宿主时该保证不变，见 Agent Harness §12）
 
 ---
 
@@ -476,28 +479,30 @@ GDD 规格 → 外部生成 API（图像/3D/音频）
          → Nanite / 材质实例 / PCG 资产目录
 ```
 
-生成出来的资产先过评测 Agent 的质检——风格一致性、辨识度、内容安全、三角面数——不达标的自动改写 prompt 重生成。这样"生成"不是一个碰运气的事情，而是一条可量化的流水线。
+生成出来的资产先过评估 Skill（资产质检）的质检——风格一致性、辨识度、内容安全、三角面数——不达标的自动改写 prompt 重生成。这样"生成"不是一个碰运气的事情，而是一条可量化的流水线。
 
 每条生成资产写入 `SourceAssetMetadata`，记录来源、prompt、模型版本、license。这是后续审计和追溯的基础。
 
 ---
 
-## 6. 编排层
+## 6. 编排层（可选宿主）
 
-编排核心采用**自研最小编排状态机**（asyncio），长任务持久化经统一 `DurableProvider` 接口外挂成熟引擎（Temporal / Prefect / SQLite），不绑定任何 Agent 图框架（完整选型见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md)），搭配 MCP Client。这一层要管四件事：
+**编排宿主在本架构中是可选/可替换的**（第一公民是能力包，见 §1）。自有薄宿主（`orchestrator/host.py`）采用**自研最小编排状态机**（asyncio），长任务持久化经统一 `DurableProvider` 接口外挂成熟引擎（Temporal / Prefect / SQLite），不绑定任何 Agent 图框架；也可用第三方宿主（经 `importers/` 注入）。完整选型见 [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md)。自有宿主这一层要管四件事：
 
-1. 任务编排：顺序执行、条件分支、循环回退。比如 CodeGen 出来的代码 Reviewer 打分低于 70 或者有 critical bug，就退回 Gameplay Agent 重做，最多 3 次。
-2. RAG grounding：Agent 调用 UE 官方文档、项目规范、引擎源码做检索增强。AutoUE 已经证明这是抑制工具幻觉的关键手段。
+1. 任务编排：顺序执行、条件分支、循环回退。比如 CodeGen 出来的代码 Reviewer 打分低于 70 或者有 critical bug，就退回 Gameplay 重做，最多 3 次。
+2. RAG grounding：调用 UE 官方文档、项目规范、引擎源码做检索增强。AutoUE 已经证明这是抑制工具幻觉的关键手段。
 3. 记忆分层：对话记忆是短期的，SharedState 是工作记忆，已验证的代码索引存向量库做长期记忆。
 4. 模型路由：简单任务走小模型（Haiku、Flash），复杂任务走大模型（Opus、Pro）。模型供应商可以随时换，不影响其他层。
 
-不可逆操作——比如自动化构建、发布——必须走人工审批。生成资产在入库之前也要人工过一眼。
+不可逆操作——比如自动化构建、发布——必须走人工审批。生成资产在入库之前也要人工过一眼。跨宿主时，以上编排/记忆/一致性下沉到 MCP / SharedState 层（见 [Agent Harness](./agent-harness-selection-and-design.md) §12）。
 
 ---
 
 ## 7. 端到端工作流示例
 
 以"在森林区域生成 4 个可收集的符文石，玩家触碰后触发机关门开启"为例，完整走一遍。但实际项目开始前，Strategy & Research 组会先跑一轮更宏观的调研。
+
+> **视角说明**：以下为**自有宿主（`host.py`）执行视角**，展示 Skill 之间的 SharedState 交接。第三方宿主（Claude Code 等）经 `importers/` 注入蒸馏子集后执行等价能力，交接契约不变（见 Agent Harness §12）。
 
 ### 7.0 策略与研究阶段（实际项目启动前）
 
@@ -514,7 +519,7 @@ GDD 规格 → 外部生成 API（图像/3D/音频）
 
 ### 7.1 预生产
 
-1. Director 把这句话展开成结构化的 GDD 和任务 JSON，分发给各个 Agent。
+1. Director Skill 把这句话展开成结构化的 GDD 和任务 JSON，编排为后续 Skill 步骤，由宿主依序调度。
 2. Concept Artist 生成森林废墟的风格指南和参考图——色调偏冷绿、材质以风化石材和苔藓为主、光照 mood 阴沉但留一线天光。
 3. Level Designer 拉灰盒：玩家从 spawn 出发，沿一条蜿蜒小路穿过森林，经过 4 个符文石 POI，最后到达机关门。节奏曲线是 slow_intro → puzzle_peak → climax。
 4. Data Agent 定义数值：4 个符文石全部收集才能开门，每个符文石可交互半径 150cm。
@@ -540,11 +545,11 @@ GDD 规格 → 外部生成 API（图像/3D/音频）
 假设 Scene Agent 把符文石 #3 的坐标从 `(1024, -320)` 改到了 `(1100, -400)`：
 
 ```
-Orchestrator 检测到 parent_hash 变了
-  → 标记 Gameplay Agent 缓存 stale
-  → Gameplay Agent 做 diff：坐标变了但交互逻辑不受影响 → 跳过
-  → 标记 Lighting Agent 缓存 stale
-  → Lighting Agent 做 diff：新坐标超出原来点光源的覆盖范围 → 调整光源位置
+宿主（或 SharedState 层）检测到 parent_hash 变了
+  → 标记 Gameplay Skill 缓存 stale
+  → Gameplay Skill 做 diff：坐标变了但交互逻辑不受影响 → 跳过
+  → 标记 Lighting Skill 缓存 stale
+  → Lighting Skill 做 diff：新坐标超出原来点光源的覆盖范围 → 调整光源位置
   → Profiler 重跑 → 通过
 ```
 
@@ -583,10 +588,15 @@ Orchestrator 检测到 parent_hash 变了
 | PCG | Procedural Content Generation | UE 程序化内容生成框架，用节点图定义生成规则 |
 | PVE | Procedural Vegetation Editor | UE 程序化植被编辑器，定义植被外观参数 |
 | PIE | Play In Editor | 编辑器内运行游戏进行测试 |
-| RAG | Retrieval-Augmented Generation | 检索增强生成，Agent 调用外部知识库减少幻觉 |
+| RAG | Retrieval-Augmented Generation | 检索增强生成，宿主/Agent 调用外部知识库减少幻觉 |
 | GDD | Game Design Document | 游戏设计文档 |
 | Toolset | — | UE MCP 中封装一组工具的集合，继承 `UToolsetDefinition` |
-| SharedState | — | Agent 间传递的结构化 JSON 规格 |
+| SharedState | — | Skill/Agent 之间传递的结构化 JSON 规格（Git 事实源） |
+| **能力包** | Capability Pack | 第一公民：UE MCP Server + Toolset + Common Spec Skill，宿主无关、可注入任一宿主 |
+| **Common Spec Skill** | — | 宿主无关的 Skill 规范（`skill.yaml`+`prompt.md`+`steps.yaml`+tools 白名单），领域能力封装 |
+| **宿主 / 编排宿主** | Host | 调度 Skill 的执行方：自有薄宿主（`host.py`）或第三方（Claude Code/Codex/OpenClaw/Hermes，经 `importers/` 注入） |
+| **跨宿主导入** | Host Import | 经 `orchestrator/importers/` 把蒸馏子集注入第三方宿主（仅引流/体验，见 Agent Harness §12） |
+| **能力蒸馏** | Distill | 经 `distiller.py` 按 Skill tier 裁剪出对外 Demo 子集（Agent Harness §11.3） |
 | CDO | Class Default Object | UE 中类的默认实例，静态函数运行其上 |
 | SSE | Server-Sent Events | HTTP 长连接单向推送协议 |
 | LTS | Long-Term Support | 长期支持版本 |
@@ -596,7 +606,7 @@ Orchestrator 检测到 parent_hash 变了
 | Nanite | — | UE5 虚拟化微多边形几何体系统 |
 | Lumen | — | UE5 动态全局光照系统 |
 | Blockout | — | 关卡灰盒设计，用简单几何体确定空间布局和动线 |
-| DAG | Directed Acyclic Graph | 有向无环图，这里用于建模 Agent 间依赖关系 |
+| DAG | Directed Acyclic Graph | 有向无环图，用于建模 Skill/Agent 间依赖关系 |
 
 ---
 

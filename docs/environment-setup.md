@@ -14,7 +14,7 @@
 - ✅ **UE 5.8 源码版编译完成**：`/Users/Shared/UnrealEngine-5.8-source`（5.8 分支）。`Build.sh UnrealEditor Mac Development` **5726/5726 全部通过**，2072 个引擎+插件模块 dylib 已 marshal 到 `Engine/Binaries/Mac/`，`UnrealEditor.modules` 完整清单已生成；编辑器实测**可完成插件/模块/Slate UI/Metal RHI 初始化**。
 - ⚠️ **仅剩 Metal toolchain 组件待补**：CoreSimulator 复检已修复；但 `metal` 仍是 stub（`/Library/Developer/Components/` 空），引擎初始化到最后一步 Metal 着色器编译时停住（`cannot execute tool 'metal'`）。此非编译/引擎问题，补装 `sudo xcodebuild -downloadComponent MetalToolchain`（需网络可达 Apple、建议绕代理）即可跑通带渲染的完整编辑器会话；**MCP/命令行工具链基础不受影响**。
 - ✅ **Xcode 26.6 完整版 + 许可已接受**，`xcode-select` 指向正确（完整版）。
-- ✅ **Python 环境就绪**：conda `unreal-agent` 环境（Python 3.13.14）+ 全部核心依赖（langgraph / litellm / mcp / lancedb / opentelemetry / pytest / pydantic 等，已 import 验证）。
+- ✅ **Python 环境就绪**：conda `unreal-agent` 环境（Python 3.13.14）+ 全部核心依赖（litellm / mcp / lancedb / opentelemetry / pytest / pydantic 等，已 import 验证）。
 - ✅ **模型凭据已配置并连通验证**：`.env` 已填 `LLM_BASE_URL` / `LLM_API_KEY`，LiteLLM 实测成功调用 DeepSeek `deepseek-chat` 并返回响应。
 - ✅ **Redis 就绪**：brew 安装 v8.10.1 并已启动，`redis-cli ping` → `PONG`（无认证要求）。
 - ✅ **Git 身份已配置**：`user.name=mychen-ustc`、`user.email=136499614@qq.com`。
@@ -39,7 +39,7 @@
 | E-03 | 完整 Xcode + CLT | UE C++ 编译/Live Coding 必需 | Xcode 26.6（完整版）+ 许可已接受，`xcode-select`= `/Applications/Xcode.app/...`；SDK 26.5 | ✅ 已完成（*simulator 组件未装，非阻塞*） |
 | E-04 | UE 5.8 LTS 引擎 | 源码编译安装（§4.1） | 编译通过（5726/5726，2072 引擎+插件模块齐全）；CoreSimulator 已修复，编辑器初始化到 RHI/渲染，**仅 Metal toolchain 组件待补** | 🟡 编译+引擎初始化通过；渲染会话仅待补 MetalToolchain 组件 |
 | E-05 | Python 运行时 | 3.11+（用 3.11/3.12/3.13 均可） | conda `unreal-agent` env = Python 3.13.14 | ✅ 已完成 |
-| E-06 | Python 依赖 | langgraph / litellm / mcp / pytest / lancedb / opentelemetry / typer / rich | 已全部装进 `unreal-agent` env（import 验证通过） | ✅ 已完成 |
+| E-06 | Python 依赖 | litellm / mcp / pytest / lancedb / opentelemetry / typer / rich | 已全部装进 `unreal-agent` env（import 验证通过） | ✅ 已完成 |
 | E-07 | Redis | SharedState 运行时缓存 | v8.10.1 已装并启动，`ping` → PONG | ✅ 已完成 |
 | E-08 | LanceDB | 向量长期记忆（嵌入式） | v0.37.1 已随 E-06 安装 | ✅ 已完成 |
 | E-09 | Git | 版本控制 + 自动 commit | git 2.50.1；`user.name=mychen-ustc` / `email=136499614@qq.com` | ✅ 已完成 |
@@ -152,7 +152,7 @@ python --version            # 3.13.13
 ```bash
 pip install --upgrade pip
 pip install \
-  langgraph litellm "mcp>=1.0" \
+  litellm "mcp>=1.0" \
   typer rich \
   pytest \
   lancedb \
@@ -168,7 +168,7 @@ pip install \
 
 ```bash
 conda activate unreal-agent
-python -c "import litellm, langgraph, mcp, lancedb, typer, rich, opentelemetry; print('deps ok')"
+python -c "import litellm, mcp, lancedb, typer, rich, opentelemetry; print('deps ok')"
 ```
 
 ---
@@ -321,7 +321,7 @@ python -m orchestrator run --task "在关卡中放置一个 Cube"
 | UE 编译 | `Build.sh UnrealEditor Mac Development` → **5726/5726 通过**（2072 引擎+插件模块齐全，dylib 已 marshal） | ✅ 已完成 |
 | UE `.modules`/运行 | `UnrealEditor.modules`（2072 模块）已生成；CoreSimulator 已修复，编辑器初始化至 RHI/渲染阶段，**仅 Metal toolchain 组件待补** | 🟡 引擎初始化通过；渲染会话仅待补 MetalToolchain（详见 §12.1） |
 | Python env | conda `unreal-agent` = 3.13.14 | ✅ 已创建 |
-| 依赖 | langgraph 1.2.11 / litellm 1.98.0 / mcp 2.1.1 / lancedb 0.37.1 / otel 1.44 / pytest / pydantic | ✅ 已装入 `unreal-agent`，import 通过 |
+| 依赖 | litellm 1.98.0 / mcp 2.1.1 / lancedb 0.37.1 / otel 1.44 / pytest / pydantic | ✅ 已装入 `unreal-agent`，import 通过 |
 | Redis | v8.10.1 运行中（`127.0.0.1:6379`，无认证） | ✅ 已装并启动，`ping` → PONG |
 | 模型凭据 | `.env` 已填 base_url + api_key | ✅ DeepSeek `deepseek-chat` LiteLLM 实测返回成功 |
 | git identity | `mychen-ustc` / `136499614@qq.com` | ✅ 已配置 |

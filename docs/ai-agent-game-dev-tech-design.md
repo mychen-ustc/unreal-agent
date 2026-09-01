@@ -15,9 +15,9 @@
 - [3. L1 宿主与协议适配层](#3-l1-宿主与协议适配层)
   - [3.5 UE 编辑器连接监督与任务恢复](#35-ue-编辑器连接监督与任务恢复)
 - [4. L2 工具平面（Toolset）](#4-l2-工具平面toolset)
-- [5. L3 领域智能体](#5-l3-领域智能体)
-- [6. L4 编排与治理层](#6-l4-编排与治理层)
-  - [6.2.1 长时任务的执行模型](#621-长时任务的执行模型langgraph-协调)
+- [5. L3 领域能力（Common Spec Skill）](#5-l3-领域能力common-spec-skill)
+- [6. L4 自有编排宿主（可选宿主之一）](#6-l4-自有编排宿主可选宿主之一)
+  - [6.2.1 长时任务的执行模型](#621-长时任务的执行模型自研协调--durable-外挂)
 - [7. 安全治理体系](#7-安全治理体系)
 - [8. 参考游戏技术实现](#8-参考游戏技术实现)
 - [9. 工程化：构建、CI、部署](#9-工程化构建cideployment)
@@ -42,7 +42,7 @@
 2. **可控性**：每一个"写"动作都经过 Sandbox、Risk Gate、审批门禁，任何变更可回滚。
 3. **可替换性**：模型、生成服务、外部资产库均通过接口隔离，更换 = 改一个配置。
 4. **可迁移性**：L2/L3/L4 与引擎版本解耦，UE6 迁移复用率 ≥ 80%（PRD §5.5）。
-5. **可观测性**：每次 Tool 调用、Agent 任务、编排决策均有结构化追踪，可重放。
+5. **可观测性**：每次 Tool 调用、Skill 步骤、编排决策均有结构化追踪，可重放。
 
 ### 1.2 设计原则
 
@@ -63,11 +63,11 @@
 ┌────────────────────────────────────────────────────────────┐
 │  L5  使用者界面（CLI · P0）→ Web Console / UE 面板（P1+）        │
 ├────────────────────────────────────────────────────────────┤
-│  L4  编排与治理层（Orchestrator · DAG · RAG · 记忆 · 模型路由）│
+│  L4  可选编排宿主（自研 `host.py` · DAG · RAG · 记忆 · 模型路由）│
 ├────────────────────────────────────────────────────────────┤
-│  L3  领域智能体（33 个 Agent，按 SharedState Schema 通信）   │
+│  L3  领域能力（33 个 Common Spec Skill，宿主调度 / SharedState）│
 ├────────────────────────────────────────────────────────────┤
-│  L2  工具平面 Toolset（10 个，结构化 JSON 工具接口）         │
+│  L2  工具平面 Toolset（12 个，结构化 JSON 工具接口）         │
 ├────────────────────────────────────────────────────────────┤
 │  L1  宿主与协议适配（UE 5.8 MCP Server · ToolsetRegistry ·  │
 │       Python/C++ 反射 · Safeguard 拦截器 · Git 钩子）        │
@@ -84,17 +84,17 @@
 
 ### 2.2 进程与数据流
 
-- **UE 编辑器进程**：内嵌 MCP Server，绑定 `127.0.0.1:8000/mcp`（JSON-RPC over HTTP）。ToolsetRegistry 把 L2 Tool 暴露为工具。
-- **编排进程（Orchestrator）**：独立进程（Python / 容器），作为 MCP Client 连 UE。负责 DAG、Agent 调度、模型调用、RAG、记忆。
-- **Agent 进程/线程**：编排进程内以协程/任务形式运行，本身不直连 UE，全部通过 Orchestrator → MCP 调用 Tool。
-- **唯一写入者**：Orchestrator 是唯一的 Tool 调用发起方；Agent 只产出"意图 + 参数"，由 Orchestrator 序列化写入。
+- **UE 编辑器进程**：内嵌 MCP Server，绑定 `127.0.0.1:8000/mcp`（JSON-RPC over HTTP）。ToolsetRegistry 把 L2 Tool 暴露为工具。**这是能力包的执行端和唯一写入者底面**（见下方"单写入者"）。
+- **宿主进程**：可以是**自有薄宿主**（`orchestrator/host.py`，选型见 §2.3）——Python / 容器，作为 MCP Client 连 UE，负责选 Skill、调度 Skill 内部步骤、模型调用、RAG、记忆；也可以是**第三方宿主**（Claude Code / Codex / OpenClaw / Hermes 等），经 `importers/` 注入蒸馏子集后直接经 MCP 驱动能力包。
+- **Skill 运行**：领域能力封装为 Common Spec Skill（§5），不常驻为独立进程；被宿主调度时在宿主进程内以协程/任务形式执行其步骤，本身不直连 UE，全部经 MCP Client → Tool 调用。
+- **唯一写入者（能力包属性，非宿主特有）**：**UE MCP Server 是唯一的 Tool 写调用执行端**，保证 Game Thread 串行 + 并发写冲突（R-04）并集中审批/审计。无论自有宿主还是第三方宿主，都只能通过 MCP 这一个写入通道触达 UE；宿主只产出"意图 + 参数"。跨宿主时该一致性**下沉到 MCP/Toolset 层**（见 [Agent Harness](./agent-harness-selection-and-design.md) §12）。
 
-> 这是与"让每个 Agent 直连 MCP"的关键架构差异：单写入者解决 Game Thread 串行 + 并发写冲突（R-04），并把审批/审计集中在一处。
+> 这是与"让每个 Skill 直连 UE 写"的关键架构差异：单写入者解决 Game Thread 串行 + 并发写冲突（R-04），并把审批/审计集中在一处。
 
 > **单写入者 ≠ 空间分区锁，两者分层管理**：
-> - **单写入者**是**物理写并发层**——Orchestrator 是唯一能发起 Tool 写调用的实体，保证 Game Thread 串行、审批/审计集中（聚焦 R-04）。
-> - **空间分区锁**是**逻辑资源归属层**——解决"两个 Agent 的产物在坐标空间/资产路径上冲突"（如 Scene 与 Lighting 同时改北区），与写并发无关。
-> - 实现上：所有写 Tool 调用天然串行（单写入者 + MCP 本就串行）；空间分区锁是 Orchestrator 调度时对**非同一坐标范围的并行授权**，不产生物理写竞争。两者职责不同，不可混用。
+> - **单写入者**是**物理写并发层**——UE MCP / Toolset 是唯一能发起 Tool 写调用的执行端，保证 Game Thread 串行、审批/审计集中（聚焦 R-04）。
+> - **空间分区锁**是**逻辑资源归属层**——解决"两个 Skill 的产物在坐标空间/资产路径上冲突"（如 Scene 与 Lighting 同时改北区），与写并发无关。
+> - 实现上：所有写 Tool 调用天然串行（单写入者 + MCP 本就串行）；空间分区锁是宿主调度时对**非同一坐标范围的并行授权**，不产生物理写竞争。两者职责不同，不可混用。
 
 ### 2.3 技术选型（实现层）
 
@@ -126,9 +126,9 @@
 CLI (Typer + Rich)              ← 运行入口：结构化 JSON 日志
    │
    ▼
-自研编排核心（asyncio 状态机） ← 编排：DAG + 回退 +（可选 Durable 外挂）
+自有宿主 host.py（asyncio 状态机） ← 调度 Skill + DAG + 回退 +（可选 Durable 外挂）
    │
-   ├─ Agent Runtime (asyncio)   ← 33 个领域 / 评估 Agent
+   ├─ Skill Runtime (asyncio)     ← 33 个领域 / 评估 Skill（Common Spec）
    │     │
    │     ├─ LiteLLM ──▶ Claude (Opus/Sonnet/Haiku)   ← 模型路由
    │     │
@@ -249,11 +249,11 @@ Orchestrator 更新 DAG / 触发下游 stale 传播
 
 整条流水线依赖"UE 编辑器在跑、MCP 连得上"，但编辑器可能崩溃、Python 插件重启、全量编译重启导致 MCP 连接中断。需要连接监督与恢复机制：
 
-- **心跳**：Orchestrator 的 `mcp_client.py` 维护到 UE MCP 的 TCP/HTTP 心跳，超时判定断开。
+- **心跳**：自有宿主（`orchestrator/host.py`）的 `mcp_client.py` 维护到 UE MCP 的 TCP/HTTP 心跳，超时判定断开。
 - **任务状态持久化**：所有 `async_long` 任务的 `job_id`、`trace_id`、`parent` 写入 `.logs/task_state.json`（或 SQLite）。P0 由 `local_sqlite` DurableProvider 持久化；生产级可升到 Temporal（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §7）。
-- **断线恢复**：连接恢复后，Orchestrator 从持久化状态重建未完成任务——查询 UE 侧 job 是否仍在运行（`pcg_get_job_status`），在则继续收割，不在则判定失败并回退。
-- **编辑器重启编排**：若检测到编辑器关闭，Orchestrator 标记所有依赖 UE 的任务为 `blocked`，等待人工 `--wait-editor` 重新就绪或自动拉起（脚本化启动 + `init_unreal.py` 自注册）。
-- **降级策略**：只读类 Agent（S1/S2/S4 等不依赖 UE 的）在编辑器离线时仍可运行；写/引擎类 Agent 阻塞。
+- **断线恢复**：连接恢复后，宿主从持久化状态重建未完成任务——查询 UE 侧 job 是否仍在运行（`pcg_get_job_status`），在则继续收割，不在则判定失败并回退。
+- **编辑器重启编排**：若检测到编辑器关闭，宿主标记所有依赖 UE 的任务为 `blocked`，等待人工 `--wait-editor` 重新就绪或自动拉起（脚本化启动 + `init_unreal.py` 自注册）。
+- **降级策略**：只读类 Skill（S1/S2/S4 等不依赖 UE 的）在编辑器离线时仍可运行；写/引擎类 Skill 阻塞。
 
 ---
 
@@ -344,40 +344,45 @@ benchmark_report(matrix, weights)          → {weighted_score, verdict, rationa
 ---
 
 
-## 5. L3 领域智能体
+## 5. L3 领域能力（Common Spec Skill）
 
-### 5.1 Agent 抽象
+> **范式说明**：本层的 33 个领域角色在本系统中以 **Common Spec Skill**（`skills/<name>/`，宿主无关）的形态存在，由宿主按任务调度，而非常驻的平级 sub-agent 网络（范式见 [Agent Harness](./agent-harness-selection-and-design.md) §1）。下列"领域 Agent"即对应 Skill 的能力定义（输入/产出/工具白名单），SharedState 路径按领域组织（`shared_state/<skill>/...`）。自有宿主用 `dag.py`/`scheduler.py` 驱动 Skill 内部步骤；第三方宿主经 `importers/` 注入后自备调度。
+
+### 5.1 Skill 抽象（DomainAgent = Skill 的能力载体）
 
 ```python
 @dataclass
-class AgentInput:
+class SkillInput:                 # 原 AgentInput
     task: str                     # 自然语言/结构化指令
     shared_state_ref: str         # 读写的 SharedState 路径
     context: dict                 # RAG 片段、上游产物、风格指南等
     trace_id: str
 
 @dataclass
-class AgentOutput:
+class SkillOutput:                # 原 AgentOutput
     result: dict                  # 结构化产出（构建脚本/提案/报告）
     shared_state_delta: dict      # 对 SharedState 的变更
-    next_agents: list[str]        # 触发的下游
+    next_skills: list[str]        # 触发的下游 Skill
     artifacts: list[str]          # 产出文件路径
 
-class DomainAgent(ABC):
+class DomainAgent(ABC):           # Skill 的能力定义（skill.yaml + prompt.md + tools）
     name: str
     role: str
-    model_profile: str            # "fast" | "strong"
+    model_profile: str            # "fast" | "strong" | "default"
     system_prompt: str
     tools: list[str]              # 可调用 Tool 白名单
+    tier: int                     # 商业能力等级（§11.3，Tier 0–4）
+    distill_visibility: str       # full | lite | hidden
 
     @abstractmethod
-    async def run(self, inp: AgentInput) -> AgentOutput: ...
+    async def run(self, inp: SkillInput) -> SkillOutput: ...
 ```
 
 - **模型路由**：`fast` → Haiku/Flash（简单生成、格式化）；`strong` → Opus/Pro（设计、代码、评审）。配置驱动，可替换（PRD §4.1.3）。
-- **工具白名单**：每个 Agent 仅暴露所需 Tool，最小化权限（例：Market Analyst 只用 `project_list_directory` + RAG，无写权限）。
+- **工具白名单**：每个 Skill 仅暴露所需 Tool，最小化权限（例：Market Analyst 只用 `project_list_directory` + RAG，无写权限）。
+- **Skill 用宿主无关的 Common Spec 编写**（`skill.yaml` 声明元数据/tier/distill_visibility + `prompt.md` 谓领域策略 + `steps.yaml` 内部步骤），可经 `distiller.py` 蒸馏、`importers/` 注入第三方宿主（见 [Agent Harness](./agent-harness-selection-and-design.md) §11/§12）。
 
-### 5.2 Agent 实现映射
+### 5.2 Skill 实现映射（33 个领域 Skill = 领域角色）
 
 **策略与研究组（S1–S6，PRD §4.1.3）**
 
@@ -483,15 +488,15 @@ class DomainAgent(ABC):
 
 ---
 
-## 6. L4 编排与治理层
+## 6. L4 自有编排宿主（可选宿主之一）
 
-> 本节描述**自有薄宿主（`orchestrator/host.py`）**的实现。它是«可选宿主之一»；能力包（Toolset + Common Spec Skill）不依赖本层，可经 `orchestrator/importers/` 注入第三方宿主（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §11）。本层的 DAG / 调度 / 单写入者一致性在跨宿主时下沉到 MCP/Toolset 层。
+> 本节描述**自有薄宿主（`orchestrator/host.py`）**的实现。它是「可选宿主之一」；能力包（Toolset + Common Spec Skill）不依赖本层，可经 `orchestrator/importers/` 注入第三方宿主（见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §11）。本层的 DAG / 调度 / 单写入者一致性在跨宿主时下沉到 MCP/Toolset 层。
 
-### 6.1 Orchestrator 核心组件
+### 6.1 自有宿主核心组件
 
 ```
 ┌──────────────────────────────────────────────┐
-│              Orchestrator                    │
+│      host.py（自有薄宿主，可选宿主之一）        │
 │  ┌──────────┐  ┌────────┐  ┌────────────┐  │
 │  │ TaskQueue │  │ DAG    │  │ Retry/     │  │
 │  │ (优先级)  │  │ Engine │  │ Loop(≤3)  │  │
@@ -503,7 +508,7 @@ class DomainAgent(ABC):
 │  └────┬────┘  └────┬────┘  └─────┬──────┘  │
 │       │            │             │         │
 │  ┌────▼────────────▼─────────────▼──────┐   │
-│  │        MCP Client (唯一写入者)        │   │
+│  │      MCP Client（UE 唯一写入者通道）    │   │
 │  └─────────────────────────────────────┘   │
 └──────────────────────────────────────────────┘
 ```
@@ -703,8 +708,8 @@ repo/
 │   ├── dag.py                # 自研 DAG 引擎（依赖传播、stale、回退）※自有宿主实现
 │   ├── scheduler.py          # 自研 asyncio 调度器（拓扑 + 优先级 + 空间分区）※自有宿主实现
 │   ├── durable/              # DurableProvider 外挂（base / local_sqlite / temporal_adapter / prefect_adapter）
-│   ├── agents/                # 领域 Agent 实现（能力参考；调用模型迁移到 Common Spec Skill）
-│   ├── skills/                # ★ 33 个 Common Spec Skill（skill.yaml + prompt.md + steps.yaml + tools 白名单）
+│   ├── agents/                # （过渡保留）领域角色实现参考；调用模型以 skills/ 为事实源，后续可移除
+│   ├── skills/                # ★ 33 个 Common Spec Skill（唯一事实源：skill.yaml + prompt.md + steps.yaml + tools 白名单）
 │   ├── rag.py                # LanceDB 检索 + 注入
 │   ├── memory/                # LanceDB 持久化目录（gitignored）
 │   ├── models.py             # LiteLLM 封装 + 模型路由（fast/default/strong；第三方宿主可复用其路由）
@@ -734,7 +739,7 @@ push / PR
 
 ### 9.3 部署形态
 
-- **开发期**：编排进程 + UE 编辑器同机（本机单人，符合 R-07）。
+- **开发期**：自有宿主进程或第三方宿主 + UE 编辑器同机（本机单人，符合 R-07）。
 - **CI 期**：UE 运行于容器/GitHub Runner（GPU 可选，用于渲染截图验证）。
 - **商业交付形态（v1.3，详见 [Agent Harness 选型](./agent-harness-selection-and-design.md) §11）**：
   - **形态 A · 纯 SaaS（主推）**：UE 运行于云端多租户沙箱（§9 多租户），客户经 API/Web 使用，能力包不出境。
@@ -761,7 +766,7 @@ push / PR
 | 端到端 | 完整流水线（含策略/生产） | UE 自动化测试 + Agent 编排 | AC-P2-07 提案、AC-P3-01 流水线、AC-P4-03 介入率 |
 | 验收 | PRD 每条 AC | 手工 + 自动化混合 | §11 全量；AC-P0/1/2/3/4 全覆盖 |
 
-> **AC 全覆盖**：验收层覆盖 PRD §9 的 36 条 AC（P0: 01–06，P1: 01–08，P2: 01–07，P3: 01–11，P4: 01–04）。每阶段在对应里程碑交付时逐条过验，见 §7。
+> **AC 全覆盖**：验收层覆盖 PRD §9 的 36 条 AC（P0: 01–06，P1: 01–08，P2: 01–07，P3: 01–11，P4: 01–04）。每阶段在对应里程碑交付时逐条过验，见 §7。**口径说明**：此 36 条为 PRD 工具链本体验收；参考游戏（验证载体）的验收见 [reference-game §7](./reference-game.md#7-验收与交付标准)（AC-REF-01~04，其中 02~04 引用 PRD AC-P4，不与 36 条重复计数）。
 
 - 每个 Tool 配套**录制回放**：录制一次真实 UE 响应，后续测试 replay，避免依赖运行中的编辑器。
 
@@ -775,7 +780,7 @@ push / PR
 | PCG 规格合理性 | 结构校验 + 参数区间 + 资产引用存在性 | 全部通过 `pcg_validate` |
 | 代码正确性 | 编译（`build_live_coding`）成功后跑单元/功能测试 | 0 编译错 + 目标功能通过 |
 | 风格一致性 | Vision 模型 + 人工采样比对风格指南 | 达标率 ≥ 90%（AC-P4-02） |
-| 内容安全 | 评测 Agent 审核 | 无违规资产 |
+| 内容安全 | 评估 Skill（资产质检）审核 | 无违规资产 |
 | 回归基准 | 历史 golden 用例重新跑，对比产物差异 | 无意外退化 |
 
 **工程化**：
