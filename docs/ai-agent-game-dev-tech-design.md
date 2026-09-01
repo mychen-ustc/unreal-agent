@@ -1,8 +1,8 @@
 # 技术设计文档
 
 项目代号：AI Agent 驱动的高品质游戏开发  
-关联 PRD：[AI_Agent_Game_Dev_PRD.md](./AI_Agent_Game_Dev_PRD.md)（v0.2）  
-关联前置文档：[项目背景与选型](./project-background-and-tech-selection.md)、[架构方案](./AI_Agent_Toolchain_Architecture-unreal.md)、[项目路线图（阶段与里程碑）](./ROADMAP.md)
+关联 PRD：[ai-agent-game-dev-prd.md](./ai-agent-game-dev-prd.md)（v0.2）  
+关联前置文档：[项目背景与选型](./project-background-and-tech-selection.md)、[架构方案](./ai-agent-toolchain-architecture-unreal.md)、[项目路线图（阶段与里程碑）](./ROADMAP.md)
 
 > 本文档是 PRD 的技术落地层。PRD 定义「做什么」，本文档定义「怎么做」：模块划分、接口契约、数据结构、关键算法、并发模型、构建与部署、可观测性、可测试性。所有 PRD 编号（F-TOOL / Agent / AC 等）均在此给出实现映射。
 

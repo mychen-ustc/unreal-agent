@@ -1,7 +1,7 @@
 # 启动前置条件 Gate（Launch Gate）
 
 项目代号：AI Agent 驱动的高品质游戏开发
-关联：[ROADMAP](./../ROADMAP.md) P0 地基 ｜ [PRD](./../AI_Agent_Game_Dev_PRD.md) §9 验收 ｜ [TechDesign](./../AI_Agent_Game_Dev_TechDesign.md) §3/§6/§7 ｜ [environment-setup](./../environment-setup.md)
+关联：[ROADMAP](./../ROADMAP.md) P0 地基 ｜ [PRD](./../ai-agent-game-dev-prd.md) §9 验收 ｜ [TechDesign](./../ai-agent-game-dev-tech-design.md) §3/§6/§7 ｜ [environment-setup](./../environment-setup.md)
 
 > 本文档回答：「**满足什么 = 可以正式启动 P0 地基**」。正式启动不是"读完文档就开跑"，而是逐条过 Gate。每项标记 `✅ 已就绪 / 🟡 有条件 / ❌ 未就绪`。
 >

@@ -1,11 +1,11 @@
 # 参考游戏文档（工具链验证载体）
 
 项目代号：AI Agent 驱动的高品质游戏开发
-关联文档：[产品需求文档](./AI_Agent_Game_Dev_PRD.md)、[项目背景与技术选型](./project-background-and-tech-selection.md)、[架构方案](./AI_Agent_Toolchain_Architecture-unreal.md)
+关联文档：[产品需求文档](./ai-agent-game-dev-prd.md)、[项目背景与技术选型](./project-background-and-tech-selection.md)、[架构方案](./ai-agent-toolchain-architecture-unreal.md)
 
 > 本文档单独维护**参考游戏（reference game）**相关的全部选型与规格内容。参考游戏不是一个独立产品，而是用来端到端验证 [AI Agent 游戏开发系统](../README.md) 这套工具链能力的落地 Demo 与压力测试——用它证明"这套 Agent 系统能做出一个可玩、高品质的游戏"。
 >
-> **主 PRD**（[产品需求文档](./AI_Agent_Game_Dev_PRD.md)）聚焦多 Agent 游戏开发系统本身；凡涉及参考游戏的具体选型、玩法、内容规格，均收敛到本文档集中维护，避免稀释产品本体的需求聚焦。
+> **主 PRD**（[产品需求文档](./ai-agent-game-dev-prd.md)）聚焦多 Agent 游戏开发系统本身；凡涉及参考游戏的具体选型、玩法、内容规格，均收敛到本文档集中维护，避免稀释产品本体的需求聚焦。
 
 ---
 

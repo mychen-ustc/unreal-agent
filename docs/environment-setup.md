@@ -1,7 +1,7 @@
 # 环境准备指南 · 研发 / 运行环境
 
 > **适用**：研发启动前的环境搭建（本机单人开发，即 TechDesign §9.3「开发期」形态）。
-> **关联文档**：[PRD](./AI_Agent_Game_Dev_PRD.md) §6 技术约束 / §7 里程碑 ｜ [TechDesign](./AI_Agent_Game_Dev_TechDesign.md) §2.3 技术选型 / §9 工程化 ｜ [ROADMAP](./ROADMAP.md) P0 ｜ [ops/STARTUP-GATE](./ops/STARTUP-GATE.md)（启动前置条件 Gate）
+> **关联文档**：[PRD](./ai-agent-game-dev-prd.md) §6 技术约束 / §7 里程碑 ｜ [TechDesign](./ai-agent-game-dev-tech-design.md) §2.3 技术选型 / §9 工程化 ｜ [ROADMAP](./ROADMAP.md) P0 ｜ [ops/STARTUP-GATE](./ops/STARTUP-GATE.md)（启动前置条件 Gate）
 > **最后核验**：对应当前机器环境现状的差异已在下文逐条标出。
 
 ---

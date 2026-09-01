@@ -12,10 +12,10 @@
 | 类别 | 文档 | 说明 | 读者 |
 |---|---|---|---|
 | **方向/为何做** | [project-background-and-tech-selection.md](./docs/project-background-and-tech-selection.md) | 项目背景、引擎选型决策（UE 5.8）、商业生态、AI 整合对比。供 PRD 继承上下文。 | 全员（产品、技术、商务） |
-| **产品/做什么** | [AI_Agent_Game_Dev_PRD.md](./docs/AI_Agent_Game_Dev_PRD.md) | **产品需求文档**：AI 多 Agent 开发系统（产品本体）的功能需求、非功能需求、验收标准、里程碑、风险登记册。 | 产品、技术、测试 |
-| **架构/结构** | [AI_Agent_Toolchain_Architecture-unreal.md](./docs/AI_Agent_Toolchain_Architecture-unreal.md) | **核心架构**：四层金字塔、33 个领域与评估 Agent、MCP 工具平面（12 Toolset）、PCG 策略、编排层、变更传播 DAG。编排细节与路线图指向 Harness 与 ROADMAP。 | AI 技术专家、引擎工程师 |
+| **产品/做什么** | [ai-agent-game-dev-prd.md](./docs/ai-agent-game-dev-prd.md) | **产品需求文档**：AI 多 Agent 开发系统（产品本体）的功能需求、非功能需求、验收标准、里程碑、风险登记册。 | 产品、技术、测试 |
+| **架构/结构** | [ai-agent-toolchain-architecture-unreal.md](./docs/ai-agent-toolchain-architecture-unreal.md) | **核心架构**：四层金字塔、33 个领域与评估 Agent、MCP 工具平面（12 Toolset）、PCG 策略、编排层、变更传播 DAG。编排细节与路线图指向 Harness 与 ROADMAP。 | AI 技术专家、引擎工程师 |
 | **底座/运行时** | [agent-harness-selection-and-design.md](./docs/agent-harness-selection-and-design.md) | **Agent Harness/运行时底座**：能力包（MCP Server + Toolset + Common Spec Skill）为第一公民、编排核心为可选宿主；含跨宿主导入（§12）、商业交付与资产保护（§11：SaaS/私有化黑盒/引流蒸馏、Skill 分级）。 | AI 技术专家、后端工程师 |
-| **实现/怎么做** | [AI_Agent_Game_Dev_TechDesign.md](./docs/AI_Agent_Game_Dev_TechDesign.md) | **技术设计**：模块划分、接口契约、数据结构、并发模型、构建/部署、可观测性、可测试性、TDR。 | 工程师（AI、UE） |
+| **实现/怎么做** | [ai-agent-game-dev-tech-design.md](./docs/ai-agent-game-dev-tech-design.md) | **技术设计**：模块划分、接口契约、数据结构、并发模型、构建/部署、可观测性、可测试性、TDR。 | 工程师（AI、UE） |
 | **验证载体** | [reference-game.md](./docs/reference-game.md) | **参考游戏（验证载体）**：品类/规格/受众/内容需求/性能/验收/决策，端到端验证工具链能力。 | 产品、技术、测试 |
 | **阶段规划/何时做** | [ROADMAP.md](./docs/ROADMAP.md) | **项目路线图（单一事实源）**：工程里程碑 P0–P6（主时间轴）+ 商业/资产保护里程碑 C0–C3（并行）+ UE6 远瞻 + 联动评审。 | 全员（阶段 gate） |
 | **环境/启动** | [environment-setup.md](./docs/environment-setup.md) | 研发/运行环境搭建（Xcode、UE 5.8 源码版、Conda、Redis、模型凭据、Git）与本机核验清单。**启动研发前完成。** | 全员（接管环境者先读） |
@@ -40,10 +40,10 @@
 
 1. **方向**：[项目背景与选型](./docs/project-background-and-tech-selection.md) — 理解「为什么选 UE 5.8、要解决什么」
 2. **阶段**：[项目路线图](./docs/ROADMAP.md) — 先看「分几期、每期做什么、何时到哪」
-3. **产品**：[PRD](./docs/AI_Agent_Game_Dev_PRD.md) — 理解「做到什么标准」
-4. **架构**：[工具链架构方案](./docs/AI_Agent_Toolchain_Architecture-unreal.md) — 理解「系统怎么搭」
+3. **产品**：[PRD](./docs/ai-agent-game-dev-prd.md) — 理解「做到什么标准」
+4. **架构**：[工具链架构方案](./docs/ai-agent-toolchain-architecture-unreal.md) — 理解「系统怎么搭」
 5. **底座**：[Agent Harness 选型与设计](./docs/agent-harness-selection-and-design.md) — 理解「运行时底座怎么选、怎么跨宿主、怎么商业化交付」
-6. **实现**：[技术设计](./docs/AI_Agent_Game_Dev_TechDesign.md) — 理解「具体怎么实现」
+6. **实现**：[技术设计](./docs/ai-agent-game-dev-tech-design.md) — 理解「具体怎么实现」
 7. **验证**：[参考游戏](./docs/reference-game.md) — 理解「用什么验证这套系统能做出什么」
 8. **启动**：[环境准备](./docs/environment-setup.md) — 开发环境就绪后进入 P0 地基
 

@@ -1,7 +1,7 @@
 # 契约与版本管理（Contracts & Versioning）
 
 项目代号：AI Agent 驱动的高品质游戏开发
-关联：[TechDesign](./../AI_Agent_Game_Dev_TechDesign.md) 附录 A/B/C（目录/IDL/错误码）｜ [PRD](./../AI_Agent_Game_Dev_PRD.md) §4.1.3 SharedState 通信
+关联：[TechDesign](./../ai-agent-game-dev-tech-design.md) 附录 A/B/C（目录/IDL/错误码）｜ [PRD](./../ai-agent-game-dev-prd.md) §4.1.3 SharedState 通信
 
 > 本文档把「契约怎么定义、怎么校验、怎么版本化、破坏性变更怎么处理」变成**可执行的实操口径**。启动后 Agent/SharedState/Tool 一起动，schema 漂移与错误码失配会最先爆发。
 

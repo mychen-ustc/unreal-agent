@@ -6,8 +6,8 @@
 > **本文档是项目「阶段划分与里程碑」的单一事实源**。它把「工程里程碑（做什么做到什么标准）」「商业 / 资产保护里程碑（怎么交付、怎么变现、怎么守住核心资产）」「UE6 远瞻（未来引擎迁移）」统一到一张路线图里。
 >
 > **与既有文档的分工**：
-> - 各里程碑对应「做什么」→ [PRD §7 里程碑与交付](./AI_Agent_Game_Dev_PRD.md#7-里程碑与交付)；
-> - 各里程碑对应「怎么实现」→ [TechDesign](./AI_Agent_Game_Dev_TechDesign.md) 各章节；
+> - 各里程碑对应「做什么」→ [PRD §7 里程碑与交付](./ai-agent-game-dev-prd.md#7-里程碑与交付)；
+> - 各里程碑对应「怎么实现」→ [TechDesign](./ai-agent-game-dev-tech-design.md) 各章节；
 > - 编排/运行时底座的演进 → [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md) §10；
 > - 商业交付形态与资产保护 → [Agent Harness 选型与技术设计](./agent-harness-selection-and-design.md) §11；
 > - 验证载体（参考游戏）在各里程碑的交付 → [参考游戏（验证载体）](./reference-game.md) §7。
@@ -52,7 +52,7 @@
 
 ## 2. 工程里程碑（主时间轴 P0–P6）
 
-> 沿用 PRD §7 的口径（周 / 时间线）。每个里程碑的「验收标准」见 [PRD §9](./AI_Agent_Game_Dev_PRD.md#9-验收标准) 与 [参考游戏 §7](./reference-game.md#7-验收与交付标准)，这里只给阶段目标与关键交付。
+> 沿用 PRD §7 的口径（周 / 时间线）。每个里程碑的「验收标准」见 [PRD §9](./ai-agent-game-dev-prd.md#9-验收标准) 与 [参考游戏 §7](./reference-game.md#7-验收与交付标准)，这里只给阶段目标与关键交付。
 
 | 阶段 | 周期 | 目标 | 关键交付 | 验收锚点 |
 |---|---|---|---|---|
@@ -143,7 +143,7 @@
 
 - **阶段 gate**：每个里程碑交付时，产品 + 技术 + 商务（涉及商业轴时）共同过 gate，对照 §2/§3 的关键交付与各自验收项。
 - **联动评审**：在「能力包首发」「计量设计」「多租户」「私有化黑盒」4 个联动点强制双向对齐（§4）。
-- **文档维护**：阶段推进时同步更新 [PRD](./AI_Agent_Game_Dev_PRD.md)、[TechDesign](./AI_Agent_Game_Dev_TechDesign.md)、[Agent Harness](./agent-harness-selection-and-design.md)、[参考游戏](./reference-game.md)，本路线图只维护「阶段号与联动」这一层。
+- **文档维护**：阶段推进时同步更新 [PRD](./ai-agent-game-dev-prd.md)、[TechDesign](./ai-agent-game-dev-tech-design.md)、[Agent Harness](./agent-harness-selection-and-design.md)、[参考游戏](./reference-game.md)，本路线图只维护「阶段号与联动」这一层。
 
 ---
 

@@ -80,11 +80,11 @@ UE6 方面：5.8 是 UE5 时代最后一个大版本，作为 LTS 开项目正�
 
 完整的架构方案、33 个领域与评估 Agent 设计、12 个 Toolset、PCG 策略、编排层和落地路线图，见架构文档：
 
-[AI_Agent_Toolchain_Architecture-unreal.md](./AI_Agent_Toolchain_Architecture-unreal.md)
+[ai-agent-toolchain-architecture-unreal.md](./ai-agent-toolchain-architecture-unreal.md)
 
 功能需求、验收标准、里程碑和风险登记册，见 PRD：
 
-[AI_Agent_Game_Dev_PRD.md](./AI_Agent_Game_Dev_PRD.md)
+[ai-agent-game-dev-prd.md](./ai-agent-game-dev-prd.md)
 
 架构上的几个关键判断：
 

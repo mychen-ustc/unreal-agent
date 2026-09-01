@@ -1,7 +1,7 @@
 # 治理运行规程（Governance-Ops）
 
 项目代号：AI Agent 驱动的高品质游戏开发
-关联：[TechDesign](./../AI_Agent_Game_Dev_TechDesign.md) §7 安全治理 / §6.5 人工卡点 ｜ [PRD](./../AI_Agent_Game_Dev_PRD.md) §4.1.2 ｜ [STARTUP-GATE](./STARTUP-GATE.md)
+关联：[TechDesign](./../ai-agent-game-dev-tech-design.md) §7 安全治理 / §6.5 人工卡点 ｜ [PRD](./../ai-agent-game-dev-prd.md) §4.1.2 ｜ [STARTUP-GATE](./STARTUP-GATE.md)
 
 > 本文档是**人工审批、回滚、数据状态、审计**的 SOP（运行规程）。启动后第一个 `destructive` 操作、第一次回滚、第一份数据备份，都按这里的流程走。
 

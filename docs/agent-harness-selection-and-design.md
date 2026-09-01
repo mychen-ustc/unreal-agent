@@ -1,9 +1,9 @@
 # Agent Harness（Agent 运行时底座）选型与技术设计
 
 项目代号：AI Agent 驱动的高品质游戏开发
-关联 PRD：[AI_Agent_Game_Dev_PRD.md](./AI_Agent_Game_Dev_PRD.md)（v0.2）
-关联技术设计：[AI_Agent_Game_Dev_TechDesign.md](./AI_Agent_Game_Dev_TechDesign.md)（§2.3 / §6 / §13）
-关联架构：[AI_Agent_Toolchain_Architecture-unreal.md](./AI_Agent_Toolchain_Architecture-unreal.md)（§1 四层 · §6 编排层）
+关联 PRD：[ai-agent-game-dev-prd.md](./ai-agent-game-dev-prd.md)（v0.2）
+关联技术设计：[ai-agent-game-dev-tech-design.md](./ai-agent-game-dev-tech-design.md)（§2.3 / §6 / §13）
+关联架构：[ai-agent-toolchain-architecture-unreal.md](./ai-agent-toolchain-architecture-unreal.md)（§1 四层 · §6 编排层）
 关联路线图：[ROADMAP.md](./ROADMAP.md)（§1 双时间轴 · §3 商业轴 C0–C3 与本章 §10/§11 对齐）
 状态：**定稿（v1.3）**
 

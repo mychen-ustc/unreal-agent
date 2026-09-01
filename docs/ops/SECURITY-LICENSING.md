@@ -1,7 +1,7 @@
 # 安全、审计与授权计量（Security & Licensing）
 
 项目代号：AI Agent 驱动的高品质游戏开发
-关联：[Agent Harness §11](./../agent-harness-selection-and-design.md#11-商业交付形态与资产保护)（商业交付/资产保护/Skill 分级）｜ [TechDesign](./../AI_Agent_Game_Dev_TechDesign.md) §7/§10 ｜ [ROADMAP](./../ROADMAP.md) §3 商业轴 / 资产保护
+关联：[Agent Harness §11](./../agent-harness-selection-and-design.md#11-商业交付形态与资产保护)（商业交付/资产保护/Skill 分级）｜ [TechDesign](./../ai-agent-game-dev-tech-design.md) §7/§10 ｜ [ROADMAP](./../ROADMAP.md) §3 商业轴 / 资产保护
 
 > 本文档把「安全 🛡、审计 📜、授权计量 🔢」统一成一份可执行的基建口径。重点：**把商业化的 License/计量/资产保护钩子在 P0 就预先埋进代码**，否则 C1/C2（蒸馏/计费）会返工。
 

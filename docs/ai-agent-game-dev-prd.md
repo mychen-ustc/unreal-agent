@@ -2,7 +2,7 @@
 
 项目代号：AI Agent 驱动的高品质游戏开发  
 版本：v0.2 定稿  
-前置文档：[项目背景与技术选型](./project-background-and-tech-selection.md)、[架构方案](./AI_Agent_Toolchain_Architecture-unreal.md)、[项目路线图（阶段与里程碑）](./ROADMAP.md)
+前置文档：[项目背景与技术选型](./project-background-and-tech-selection.md)、[架构方案](./ai-agent-toolchain-architecture-unreal.md)、[项目路线图（阶段与里程碑）](./ROADMAP.md)
 
 > 本文 PRD 聚焦**多 Agent 游戏开发系统（产品本体）**的功能、非功能、里程碑与验收需求。用于端到端验证系统能力的"参考游戏"仅在测试/验证环节作为产出物引用，其选型、规格、内容与验收标准统一维护在 [参考游戏（验证载体）](./reference-game.md)。
 

@@ -1,7 +1,7 @@
 # UE 引擎工作流与协作约定（UE Engine Workflow）
 
 项目代号：AI Agent 驱动的高品质游戏开发
-关联：[environment-setup](./../environment-setup.md)（源码编译）｜ [TechDesign](./../AI_Agent_Game_Dev_TechDesign.md) §12（UE6 迁移）｜ [Architecture](./../AI_Agent_Toolchain_Architecture-unreal.md) §0（源码可控/引擎级定制）
+关联：[environment-setup](./../environment-setup.md)（源码编译）｜ [TechDesign](./../ai-agent-game-dev-tech-design.md) §12（UE6 迁移）｜ [Architecture](./../ai-agent-toolchain-architecture-unreal.md) §0（源码可控/引擎级定制）
 
 > 本文档约定 **UE 源码分支管理、引擎级 AI 定制放哪、如何构建/发布、如何与 orchestrator 对齐版本**。这是多人协作、且做引擎级定制前必须定的口径（架构 §0 原则三：拿完整 UE 源码做引擎级改造）。
 

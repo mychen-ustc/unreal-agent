@@ -265,7 +265,7 @@ Profiler 跑一遍 GPU 和 CPU profiling，标出超标区域，反馈给 Scene 
 | E5 Monetization & Market Fit | 定价 / 内容量 / 平台 / 回收模型 | 商人与发行视角 | business_model + S4 输出 → 内容量 vs 定价是否成立 |
 | E6 Benchmark & Horizontal | 与现有游戏的横向全维度对比 | 市场/测评博主视角 | S2 竞品矩阵 + S1 市场 + 实机产物 → 对照评分表 + 受欢迎度预测 + GO/NO-GO/PIVOT |
 
-配套的 UX / Playtest 研究者与评估用 Toolset（PlaytestToolset、BenchmarkToolset）、`eval/*` 数据契约和回退规则见 [技术设计](./AI_Agent_Game_Dev_TechDesign.md) §5.2 / §4.3。
+配套的 UX / Playtest 研究者与评估用 Toolset（PlaytestToolset、BenchmarkToolset）、`eval/*` 数据契约和回退规则见 [技术设计](./ai-agent-game-dev-tech-design.md) §5.2 / §4.3。
 
 ### 2.6 Agent 间通信
 
@@ -558,7 +558,7 @@ Orchestrator 检测到 parent_hash 变了
 1. **引擎级定制走在 UE6 前**：本项目规划对 UE 做引擎级 AI 定制（推理嵌渲染/校验、定制 Agent 沙箱、扩展 PCG），这部分既是 P5+ 的工程蓝图，也是私有化黑盒（C3）的核心壁垒——见 [ROADMAP](./ROADMAP.md) §5 UE6 远瞻。
 2. **可迁移纪律**：核心框架代码往 Verse 侧靠（为 UE6 准备）；PCG 与资源层天然可迁移。先在各阶段用 disposable sandbox map 验证 Agent，确认没问题再进正式关卡。
 
-> 各阶段的「做什么/做到什么标准」见 [PRD §7](./AI_Agent_Game_Dev_PRD.md#7-里程碑与交付)·[§9](./AI_Agent_Game_Dev_PRD.md#9-验收标准)；「怎么做」见 TechDesign；参考游戏各阶段交付见 [reference-game §7](./reference-game.md#7-验收与交付标准)。
+> 各阶段的「做什么/做到什么标准」见 [PRD §7](./ai-agent-game-dev-prd.md#7-里程碑与交付)·[§9](./ai-agent-game-dev-prd.md#9-验收标准)；「怎么做」见 TechDesign；参考游戏各阶段交付见 [reference-game §7](./reference-game.md#7-验收与交付标准)。
 
 ---
 
@@ -612,4 +612,4 @@ Orchestrator 检测到 parent_hash 变了
 ## 关联文档
 
 - [项目背景与技术选型](./project-background-and-tech-selection.md)
-- [产品需求文档（PRD）](./AI_Agent_Game_Dev_PRD.md)
+- [产品需求文档（PRD）](./ai-agent-game-dev-prd.md)
