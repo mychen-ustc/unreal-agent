@@ -1,0 +1,38 @@
+{
+  "run_id": "run-20260902-125149-7777b89b",
+  "direction": "探索驱动、收集符文开门、暗黑奇幻、带一点魂系氛围但降低战斗惩罚的动作冒险",
+  "created_at": "2026-09-02T12:54:24.753138+00:00",
+  "stages": [
+    {
+      "name": "market",
+      "producer": "s1_market_research",
+      "path": "runs/run-20260902-125149-7777b89b/strategy/market"
+    },
+    {
+      "name": "competitor",
+      "producer": "s2_competitive_intel",
+      "path": "runs/run-20260902-125149-7777b89b/strategy/competitor"
+    },
+    {
+      "name": "game_design",
+      "producer": "s3_game_design",
+      "path": "runs/run-20260902-125149-7777b89b/strategy/game_design"
+    },
+    {
+      "name": "creative_direction",
+      "producer": "s6_creative_direction",
+      "path": "runs/run-20260902-125149-7777b89b/strategy/creative_direction"
+    },
+    {
+      "name": "proposal",
+      "producer": "director",
+      "path": "runs/run-20260902-125149-7777b89b/strategy/proposal"
+    },
+    {
+      "name": "eval_benchmark",
+      "producer": "eval_benchmark",
+      "path": "runs/run-20260902-125149-7777b89b/eval/benchmark"
+    }
+  ],
+  "active": true
+}
