@@ -35,6 +35,8 @@ class DistilledSkill:
     visibility: str
     distilled_input_schema: dict = field(default_factory=dict)
     distilled_tool_whitelist: list[str] = field(default_factory=list)
+    steps: list[dict] = field(default_factory=list)   # 能力注记（拍平后的执行步骤，供宿主提示）
+    description: str = ""
     note: str = ""
 
     def as_dict(self) -> dict:
@@ -44,6 +46,8 @@ class DistilledSkill:
             "visibility": self.visibility,
             "input_schema": self.distilled_input_schema,
             "tool_whitelist": self.distilled_tool_whitelist,
+            "steps": self.steps,
+            "description": self.description,
             "note": self.note,
         }
 
@@ -92,6 +96,8 @@ class Distiller:
                     visibility=spec.distill_visibility,
                     distilled_input_schema=spec.input_schema,
                     distilled_tool_whitelist=spec.tool_whitelist,
+                    steps=[_step_note(s) for s in spec.steps],
+                    description=spec.description,
                     note=f"min_visibility={spec.distill_visibility}",
                 )
             )
@@ -100,6 +106,18 @@ class Distiller:
     def make_mvp_subset(self, skill_names: list[str] | None = None) -> list[DistilledSkill]:
         """语义别名：生成最小可用版子集（= distill() 的 tier<=2 语义）。"""
         return self.distill(skill_names)
+
+
+def _step_note(step: Any) -> dict:
+    """把 SkillStep 拍平为宿主无关的能力注记（§12.4：depends/severity/partition 转约束）。"""
+    note = {"id": step.id}
+    if step.dependencies:
+        note["依赖"] = step.dependencies
+    if step.severity and step.severity != "read_only":
+        note["风险"] = step.severity
+    if step.partition:
+        note["分区"] = step.partition
+    return note
 
 
 _default_distiller: Distiller | None = None

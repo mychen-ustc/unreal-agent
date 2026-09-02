@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from orchestrator.importers.base import HarnessImporter
+from orchestrator.importers.claude_code import ClaudeCodeImporter
 from orchestrator.importers.self_hosted import SelfHostedImporter
 
-# 初始注册：self_hosted 为参考实现；claude_code/codex/openclaw/hermes 按文档 §12.4 后续补。
+# 初始注册：Claude Code（§12.7 P0/P1 优先）+ self_hosted（参考实现）。
+# codex/openclaw/hermes 按文档 §12.4 后续补充。
 _ADAPTERS: dict[str, type[HarnessImporter]] = {
+    "claude_code": ClaudeCodeImporter,
     "self_hosted": SelfHostedImporter,
 }
 

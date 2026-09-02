@@ -17,7 +17,7 @@ from orchestrator.trace import TraceWriter
 
 log = logging.getLogger(__name__)
 
-# P0 简单规则：指令中含关键词 -> 选 Skill（P1 换 LLM 路由）
+# P0:关键词兜底映射（LLM 选型不可用/失败时回退）
 _KEYWORD_MAP = {
     "pcg": "scenes_pcg",
     "场景": "scenes_pcg",
@@ -33,18 +33,54 @@ class Host:
         router: ModelRouter | None = None,
         trace: TraceWriter | None = None,
         registry: SkillRegistry | None = None,
+        use_llm_select: bool = True,
     ) -> None:
         self.mcp = mcp
         self.router = router or ModelRouter()
         self.trace = trace or TraceWriter()
         self.registry = registry or SkillRegistry()
+        # LLM 选型开关：默认开；失败自动回退关键词（保证 stub/离线可用）
+        self.use_llm_select = use_llm_select
 
-    def select_skill(self, instruction: str) -> str:
+    def _keyword_fallback(self, instruction: str) -> str:
         low = instruction.lower()
         for kw, skill in _KEYWORD_MAP.items():
             if kw in low:
                 return skill
-        return "general" if "general" in self.registry.discover() else self.registry.discover()[0]
+        names = self.registry.discover()
+        return names[0] if names else "general"
+
+    def select_skill(self, instruction: str) -> str:
+        """从已装载 Skill 中选出最适合指令的名称。
+
+        优先走 LLM（fast 档）做语义选型；失败/禁用时回退关键词匹配。
+        """
+        names = self.registry.discover()
+        if not names:
+            raise RuntimeError("Skills 目录为空，无法选型")
+        if not self.use_llm_select:
+            return self._keyword_fallback(instruction)
+        try:
+            return self._select_by_llm(instruction, names)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("LLM 选型失败，回退关键词: %s", exc)
+            return self._keyword_fallback(instruction)
+
+    def _select_by_llm(self, instruction: str, names: list[str]) -> str:
+        """让 LLM 从 names 中选最匹配指令的 Skill（要求只输出一个已知 name）。"""
+        allowed = ", ".join(names)
+        prompt = (
+            "你是 UE 研发管线宿主的 Skill 选型器。\n"
+            f"可用 Skill：{allowed}\n"
+            f"用户指令：{instruction}\n"
+            "请只输出一个最匹配的 Skill 名称（必须是上面列表之一，不要解释）。"
+        )
+        text = asyncio.run(self.router.complete(prompt, tier="fast")).strip()
+        # 限定返回必须在已知 Skill 内（防 LLM 幻觉输出不属于任何 Skill 的名字）
+        for n in names:
+            if n in text:
+                return n
+        return self._keyword_fallback(instruction)
 
     def run(self, instruction: str, skill_name: str | None = None) -> dict:
         """执行一次宿主指令：装载 Skill → 用自研 DAG/调度器驱动其内部步骤。
