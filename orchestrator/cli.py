@@ -25,7 +25,6 @@ from rich.panel import Panel
 from orchestrator.dag import DagEngine, DagNode
 from orchestrator.mcp_client import McpClient, StubTransport, as_approver
 from orchestrator.trace import TraceWriter, DEFAULT_LOG_DIR
-
 app = typer.Typer(help="UnrealAgent Orchestrator（P0 地基）")
 console = Console()
 
@@ -217,6 +216,49 @@ def demo_active() -> None:
         f"信封目录: {run_dir}/",
         title="ACTIVE configuration",
     ))
+
+
+@app.command("ue-p0")
+def ue_p0(
+    endpoint: str = typer.Option("http://127.0.0.1:8000/mcp", "--endpoint", help="UE MCP Server 地址"),
+    only_discover: bool = typer.Option(False, "--discover", help="只列出工具/自研 toolset 是否可用，不做改动"),
+) -> None:
+    """AC-P0 真 UE 最小闭环：经会话协议 place_cube→list→remove（需编辑器 -ModelContextProtocolStartServer 在跑）。"""
+    from orchestrator.ue_mcp import UeMcpClient
+
+    ue = UeMcpClient(endpoint=endpoint)
+    if not ue.ensure_session():
+        console.print("[red]连不上 UE MCP（先启动编辑器带 -ModelContextProtocolStartServer 并让 8000 监听）[/]")
+        return
+    console.print("[green]UE MCP session OK[/]")
+    ts_name = ue.find_toolset_containing("BasicSpawn")
+    if not ts_name:
+        console.print("[yellow]未发现 BasicSpawnToolset（可能本编辑器会话未载入 Python 注册）。[/]")
+        console.print("当前可发现工具集：")
+        for ln in ue.list_toolsets_text().splitlines():
+            if ln.lstrip().startswith("- "):
+                console.print("  " + ln.strip()[:120])
+        if only_discover:
+            return
+        console.print("[dim]提示：BasicSpawnToolset 通过项目 Content/Python/init_unreal.py 在启动时注册；"
+                      "注册后本工具应出现在 Editor 工具集（也可能需 ModelContextProtocol.RefreshTools）。[/]")
+        return
+    console.print(f"[bold]自研 toolset 已载入[/]: {ts_name}")
+    if only_discover:
+        return
+    step = console.print
+    # place
+    step("[cyan]① place_cube(0,0,100, 'AgentCube')[/]")
+    r1 = ue.call_tool(ts_name, "place_cube", {"label": "AgentCube", "location_z": 100.0})
+    console.print("  → " + r1[:200])
+    # list
+    step("[cyan]② list_agent_cubes[/]")
+    r2 = ue.call_tool(ts_name, "list_agent_cubes", {})
+    console.print("  → " + r2[:400])
+    # remove
+    step("[cyan]③ remove_cube('AgentCube')[/]")
+    r3 = ue.call_tool(ts_name, "remove_cube", {"label": "AgentCube"})
+    console.print("  → " + r3[:200])
 
 
 @app.command("approve")
