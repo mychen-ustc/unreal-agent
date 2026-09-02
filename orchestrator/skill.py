@@ -37,13 +37,22 @@ class SkillStep:
 
 @dataclass
 class SkillSpec:
-    """从 skill.yaml 加载的技能元数据。"""
+    """从 skill.yaml 加载的技能元数据。
+
+    字段对齐 Agent Harness §11.3 / §12.3（Common Spec）：
+    - tier：商业能力等级（0–4），用于 distiller 裁剪（完整能力包分级，P0 即声明）
+    - distill_visibility：对外蒸馏可见度（full | lite | hidden），资产保护红线
+    - default_tier：模型档位（fast | default | strong），用于模型路由
+    - risk：风险分级（read_only | mutating | destructive），走审批门
+    """
 
     name: str
     description: str = ""
     input_schema: dict = field(default_factory=dict)
     output_schema: dict = field(default_factory=dict)
-    default_tier: str = "default"
+    default_tier: str = "default"          # 模型档位（fast/default/strong）
+    tier: int = 0                          # 商业能力等级 0–4（§11.3）
+    distill_visibility: str = "full"       # full | lite | hidden（§11.3 / SECURITY-LICENSING）
     tool_whitelist: list[str] = field(default_factory=list)
     risk: str = "read_only"
     steps: list[SkillStep] = field(default_factory=list)
@@ -99,6 +108,8 @@ class SkillRegistry:
             input_schema=raw.get("input_schema", {}),
             output_schema=raw.get("output_schema", {}),
             default_tier=raw.get("default_tier", "default"),
+            tier=_parse_tier(raw.get("tier", 0)),
+            distill_visibility=_check_distill(raw.get("distill_visibility", "full")),
             tool_whitelist=raw.get("tool_whitelist", []),
             risk=raw.get("risk", "read_only"),
         )
@@ -128,6 +139,28 @@ class SkillRegistry:
                 )
             )
         return steps
+
+
+def _parse_tier(val) -> int:
+    """把 tier 解析为 0–4 的 int；兼容字符串/缺省。"""
+    try:
+        t = int(val)
+    except (TypeError, ValueError):
+        log.warning("tier 非法值 %r，回退为 0", val)
+        return 0
+    if t < 0 or t > 4:
+        log.warning("tier=%d 超出 0–4，钳制为 %d", t, max(0, min(4, t)))
+    return max(0, min(4, t))
+
+
+_VALID_DISTILL = {"full", "lite", "hidden"}
+
+
+def _check_distill(visibility: str) -> str:
+    v = visibility if visibility in _VALID_DISTILL else "full"
+    if v != visibility:
+        log.warning("distill_visibility=%r 非法，回退为 full", visibility)
+    return v
 
 
 _default_registry: SkillRegistry | None = None

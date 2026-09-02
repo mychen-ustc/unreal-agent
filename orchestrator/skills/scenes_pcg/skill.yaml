@@ -3,6 +3,11 @@ name: scenes_pcg
 description: "按 JSON 规格生成/修改 PCG Graph 资产，产出生物群系场景（PRD 参考游戏 §4.2）"
 default_tier: default
 
+# 商业能力分级（Agent Harness §11.3 / ops SECURITY-LICENSING §3.2，P0 即声明）
+# tier：商业能力等级 0–4（0=内部/守不住，4=核心壁垒）；distill_visibility：对外蒸馏可见度
+tier: 2                # 场景生成属于中等价值能力；内部完整、对外仅 lite
+distill_visibility: lite
+
 input_schema:
   type: object
   required: [biome, graph_path]
