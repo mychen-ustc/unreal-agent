@@ -161,6 +161,22 @@ def import_skills(
     console.print(f"[green]已注入 {target}（{len(bundle.all_files())} 个文件）。[/]")
 
 
+@app.command("demo-concept")
+def demo_concept(
+    direction: str = typer.Option(..., "--direction", "-d", help="模糊的游戏方向一句话"),
+) -> None:
+    """演示：多 Skill(S1→S2→S3→S6→Director→E6) 协同产出核心玩法提案并评估。
+
+    直接用真实 LLM（读 .env）逐个策略/生产/评估 Skill 产出内容，并按 SharedState 信封
+    （含 parent_hash）落到 shared_state/，最后打印结构化提案 + GO/NO-GO 结论。
+    """
+    from orchestrator.demo_concept import run_concept, render
+
+    console.print(f"[bold]开始提案管线：{direction}[/]（真实 LLM，约 6 次调用）")
+    root = run_concept(direction)
+    console.print(render(root))
+
+
 @app.command("approve")
 def approve(
     task_id: str = typer.Option(..., "--task-id"),

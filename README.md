@@ -79,6 +79,8 @@ python -m orchestrator skills                       # 列 Skill（含商业 tier
 python -m orchestrator plan --task "搭玩法" --dry-run
 python -m orchestrator run --task "用 PCG 生成森林"   # 选 Skill + DAG 调度其步骤 + trace
 python -m orchestrator import --target self_hosted --skills scenes_pcg   # 蒸馏子集注入宿主
+# 多 Skill 端到端 demo（需 .env 模型凭据、真实 LLM 约 6 次调用；共享状态写 shared_state/）：
+python -m orchestrator demo-concept --direction "探索驱动、收集符文开门、暗黑奇幻、轻战斗"
 # 模型路由实测（需 .env）：python -c "import asyncio; from orchestrator.models import get_router; print(asyncio.run(get_router().complete('hi', tier='fast')))"
 ```
 
