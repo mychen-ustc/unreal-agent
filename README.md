@@ -54,10 +54,10 @@
 ```text
 orchestrator/
 ├── cli.py            # Typer 入口：run / plan / skills / import / approve / rollback
-├── host.py           # 薄宿主：选 Skill + 用 DAG/调度器驱动其内部步骤
+├── host.py           # 薄宿主：LLM/Skill 选型 + 用 DAG/调度器驱动其内部步骤
 ├── skill.py + skills/# Common Spec Skill 封装（scenes_pcg 为示例，含商业 tier/distill）
 ├── distiller.py      # ★ 能力蒸馏（§11.3）：完整能力包 → 对外 MVP 子集（tier<=2 裁剪）
-├── importers/        # ★ 跨宿主导入（§12）：蒸馏子集 → self_hosted/claude_code/codex/...
+├── importers/        # ★ 跨宿主导入（§12）：蒸馏子集 → claude_code / self_hosted（codex/openclaw 待补）
 ├── dag.py            # ★ 自研 DAG 状态机（依赖传播/stale/回退 ≤3）
 ├── scheduler.py      # asyncio 调度器（拓扑 + 优先级 + 并发）
 ├── task_queue.py     # 优先级任务队列
@@ -81,8 +81,8 @@ python -m orchestrator import --target self_hosted --skills scenes_pcg   # 蒸�
 # 模型路由实测（需 .env）：python -c "import asyncio; from orchestrator.models import get_router; print(asyncio.run(get_router().complete('hi', tier='fast')))"
 ```
 
-**已实现（实测自检通过）**：模型路由（DeepSeek 连通）、DAG/拓扑/stale/回退、Skill 装载 + **Scheduler 按依赖驱动步骤**、Skill 商业分级（tier/distill）、**distiller 能力蒸馏（tier<=2）**、**importers 跨宿主导入骨架**、MCP 桩 + 审批门、SQLite Durable、SharedState 信封、CLI + trace。
-**待后续**：连真 UE 的 MCP（`--no-stub` + `--endpoint`）、Skill 自动选型上 LLM/RAG、其余 32 个 Skill、LanceDB 真实检索、importers 补 claude_code/codex/openclaw/hermes 宿主格式。
+**已实现（实测自检通过）**：模型路由（DeepSeek 连通）、DAG/拓扑/stale/回退、Skill 装载 + **Scheduler 按依赖驱动步骤**、Skill 商业分级（tier/distill）、**LLM/Skill 选型（失败回退关键词）**、**distiller 能力蒸馏（tier<=2）**、**importers 跨宿主导入（claude_code + self_hosted）**、MCP 桩 + 审批门、SQLite Durable、SharedState 信封、CLI + trace。
+**待后续**：连真 UE 的 MCP（`--no-stub` + `--endpoint`）、其余 32 个 Skill、LanceDB 真实检索、importers 补 codex/openclaw/hermes 宿主格式。
 
 ---
 

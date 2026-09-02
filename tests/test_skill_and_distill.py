@@ -96,4 +96,27 @@ def test_unknown_importer_raises():
     from orchestrator.importers.registry import get_importer
 
     with pytest.raises(KeyError):
-        get_importer("claude_code")  # 尚未实现，应明确报错
+        get_importer("codex")  # 尚未实现，应明确报错
+
+
+def test_claude_code_importer_generates_skill_md():
+    """Claude Code Adapter：SKILL.md + .mcp.json + MANIFEST.json（§12.4）。"""
+    from orchestrator.distiller import Distiller
+    from orchestrator.importers.registry import get_importer, list_targets
+
+    assert "claude_code" in list_targets()
+    subset = Distiller().make_mvp_subset()
+    bundle = get_importer("claude_code").generate(subset, "http://127.0.0.1:8000/mcp")
+
+    paths = {f.rel_path for f in bundle.all_files()}
+    skill_md = next(f for f in bundle.all_files() if f.rel_path.endswith("SKILL.md"))
+    mcp_json = next(f for f in bundle.all_files() if f.rel_path == ".mcp.json")
+
+    # SKILL.md：Anthropic frontmatter + 执行步骤注记
+    assert skill_md.content.startswith("---\nname: scenes_pcg")
+    assert "executing_notes" or "## 执行步骤" in skill_md.content
+    assert "## 执行步骤" in skill_md.content
+    # .mcp.json：指向 UE MCP Server
+    assert '"unreal-agent"' in mcp_json.content
+    assert "127.0.0.1:8000/mcp" in mcp_json.content
+    assert ".mcp.json" in paths and "MANIFEST.json" in paths

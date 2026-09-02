@@ -79,8 +79,34 @@ def test_host_run_drives_skill_steps_via_scheduler():
         def agent_event(self, *a, **k):
             pass
 
-    host = Host(mcp=mcp, trace=_DummyTrace())
+    host = Host(mcp=mcp, trace=_DummyTrace(), use_llm_select=False)
     result = host.run("用 PCG 生成森林")
     assert result["skill"] == "scenes_pcg"
     assert set(result["steps"]) == {"plan_spec", "generate_graph", "validate"}
     assert result["steps_executed"] == 3
+
+
+def test_select_skill_keyword_fallback():
+    """LLM 选型禁用时走关键词兜底。"""
+    from orchestrator.host import Host
+    from orchestrator.mcp_client import StubTransport, McpClient
+
+    host = Host(mcp=McpClient(transport=StubTransport(require_ue=False)), use_llm_select=False)
+    assert host.select_skill("用 PCG 生成地形") == "scenes_pcg"
+
+
+def test_select_skill_llm_fallback_on_error():
+    """LLM 选型抛出异常时应回退关键词，不中断。"""
+    from orchestrator.host import Host
+    from orchestrator.mcp_client import StubTransport, McpClient
+
+    class _BrokenRouter:
+        async def complete(self, prompt, tier="default"):
+            raise RuntimeError("模型不可用")
+
+    host = Host(
+        mcp=McpClient(transport=StubTransport(require_ue=False)),
+        router=_BrokenRouter(),
+        use_llm_select=True,
+    )
+    assert host.select_skill("用 PCG 生成森林") == "scenes_pcg"  # 回退关键词
