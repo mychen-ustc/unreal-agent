@@ -54,8 +54,9 @@
 ```text
 orchestrator/
 ├── cli.py            # Typer 入口：run / plan / skills / import / approve / rollback
-├── host.py           # 薄宿主：LLM/Skill 选型 + 用 DAG/调度器驱动其内部步骤
-├── skill.py + skills/# Common Spec Skill 封装（scenes_pcg 为示例，含商业 tier/distill）
+├── host.py           # 薄宿主：LLM/Skill 选型 + 用 DAG/调度器驱动步骤并调 MCP 工具
+├── toolset_registry.py# ★ 12 个自研 Toolset 的工具注册（list_tools 事实源，能力包执行端）
+├── skill.py + skills/# Common Spec Skill（scenes_pcg/lighting_setup/data_pipeline/qa_smoke 等）
 ├── distiller.py      # ★ 能力蒸馏（§11.3）：完整能力包 → 对外 MVP 子集（tier<=2 裁剪）
 ├── importers/        # ★ 跨宿主导入（§12）：蒸馏子集 → claude_code / self_hosted（codex/openclaw 待补）
 ├── dag.py            # ★ 自研 DAG 状态机（依赖传播/stale/回退 ≤3）
@@ -64,7 +65,7 @@ orchestrator/
 ├── durable/          # DurableProvider（base + local_sqlite）
 ├── models.py         # LiteLLM 封装 + fast/default/strong 三档路由
 ├── config/models.yaml# 模型映射（读 .env 的 base_url/model_name）
-├── mcp_client.py     # MCP Client（唯一写入者 + 审批门）
+├── mcp_client.py     # MCP Client（唯一写入者 + 审批门 approval=prompt|auto|read_only）
 ├── shared_state.py   # SharedState（Git 事实源 + 信封）
 ├── rag.py + memory/  # LanceDB 检索骨架
 └── trace.py          # JSON Lines trace（.logs/trace.jsonl）
@@ -81,8 +82,9 @@ python -m orchestrator import --target self_hosted --skills scenes_pcg   # 蒸�
 # 模型路由实测（需 .env）：python -c "import asyncio; from orchestrator.models import get_router; print(asyncio.run(get_router().complete('hi', tier='fast')))"
 ```
 
-**已实现（实测自检通过）**：模型路由（DeepSeek 连通）、DAG/拓扑/stale/回退、Skill 装载 + **Scheduler 按依赖驱动步骤**、Skill 商业分级（tier/distill）、**LLM/Skill 选型（失败回退关键词）**、**distiller 能力蒸馏（tier<=2）**、**importers 跨宿主导入（claude_code + self_hosted）**、MCP 桩 + 审批门、SQLite Durable、SharedState 信封、CLI + trace。
-**待后续**：连真 UE 的 MCP（`--no-stub` + `--endpoint`）、其余 32 个 Skill、LanceDB 真实检索、importers 补 codex/openclaw/hermes 宿主格式。
+**已实现（实测自检通过）**：模型路由（DeepSeek 连通）、DAG/拓扑/stale/回退、Skill 装载 + **Scheduler 按依赖驱动步骤**、Skill 商业分级（tier/distill）、**LLM/Skill 选型（失败回退关键词）**、**distiller 能力蒸馏（tier<=2）**、**importers 跨宿主导入（claude_code + self_hosted）**、**MCP Toolset Registry（12 个自研 Toolset 可发现，24 个工具桩态可调）**、Skill 步骤->Tool 映射执行 + 审批门（approval=prompt|auto|read_only）、SQLite Durable、SharedState 信封、CLI + trace。
+**已建 Skill**：`scenes_pcg`（场景/PCG）、`lighting_setup`（灯光）、`data_pipeline`（数据）、`qa_smoke`（工程冒烟）——各含 Common Spec（skill.yaml 含商业 tier/distill + steps.yaml 映射工具 + prompt.md）。
+**待后续**：连真 UE 的 MCP（`--no-stub` + `--endpoint`）、其余 Skill 补齐（其余约 29 个领域能力，按分组扩展）、LanceDB 真实检索、importers 补 codex/openclaw/hermes 宿主格式。
 
 ---
 

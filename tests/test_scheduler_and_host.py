@@ -66,11 +66,11 @@ def test_mcp_approval_gate_rejects_by_default():
 
 
 def test_host_run_drives_skill_steps_via_scheduler():
-    """Host.run 用 Scheduler 按依赖驱动 scenes_pcg 步骤。"""
+    """Host.run 用 Scheduler 按依赖驱动 scenes_pcg 步骤（经 MCP 工具 + 审批门）。"""
     from orchestrator.host import Host
-    from orchestrator.mcp_client import StubTransport, McpClient
+    from orchestrator.mcp_client import StubTransport, McpClient, approve_all
 
-    mcp = McpClient(transport=StubTransport(require_ue=False))
+    mcp = McpClient(transport=StubTransport(require_ue=False), approver=approve_all)
 
     class _DummyTrace:
         def tool_call(self, *a, **k):
@@ -84,6 +84,11 @@ def test_host_run_drives_skill_steps_via_scheduler():
     assert result["skill"] == "scenes_pcg"
     assert set(result["steps"]) == {"plan_spec", "generate_graph", "validate"}
     assert result["steps_executed"] == 3
+    # 步骤确实经 MCP 调用了工具（桩态记录；project_list_directory 只读 + mutating 工具已放行）
+    called = {c["method"] for c in mcp.transport.log}
+    assert "project_list_directory" in called
+    assert "pcg_generate_graph" in called
+    assert "pcg_validate" in called
 
 
 def test_select_skill_keyword_fallback():
@@ -93,6 +98,18 @@ def test_select_skill_keyword_fallback():
 
     host = Host(mcp=McpClient(transport=StubTransport(require_ue=False)), use_llm_select=False)
     assert host.select_skill("用 PCG 生成地形") == "scenes_pcg"
+
+
+def test_select_skill_keyword_maps_multi():
+    """关键词兜底要能选到不同分组 Skill。"""
+    from orchestrator.host import Host
+    from orchestrator.mcp_client import StubTransport, McpClient, approve_all
+
+    host = Host(mcp=McpClient(transport=StubTransport(require_ue=False), approver=approve_all),
+                use_llm_select=False)
+    assert host.select_skill("调整光照变暗") == "lighting_setup"
+    assert host.select_skill("csv 导入数值") == "data_pipeline"
+    assert host.select_skill("冒烟测试可玩性") == "qa_smoke"
 
 
 def test_select_skill_llm_fallback_on_error():

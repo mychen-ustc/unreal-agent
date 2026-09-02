@@ -105,7 +105,7 @@ def test_claude_code_importer_generates_skill_md():
     from orchestrator.importers.registry import get_importer, list_targets
 
     assert "claude_code" in list_targets()
-    subset = Distiller().make_mvp_subset()
+    subset = Distiller().make_mvp_subset(skill_names=["scenes_pcg"])
     bundle = get_importer("claude_code").generate(subset, "http://127.0.0.1:8000/mcp")
 
     paths = {f.rel_path for f in bundle.all_files()}
@@ -114,9 +114,40 @@ def test_claude_code_importer_generates_skill_md():
 
     # SKILL.md：Anthropic frontmatter + 执行步骤注记
     assert skill_md.content.startswith("---\nname: scenes_pcg")
-    assert "executing_notes" or "## 执行步骤" in skill_md.content
     assert "## 执行步骤" in skill_md.content
     # .mcp.json：指向 UE MCP Server
     assert '"unreal-agent"' in mcp_json.content
     assert "127.0.0.1:8000/mcp" in mcp_json.content
     assert ".mcp.json" in paths and "MANIFEST.json" in paths
+
+
+# ---- 多 Skill 分组：发现与白名单/工具映射 ----
+
+def test_skill_groups_discovered():
+    """P0 代表 Skill（场景/灯光/数据/QA）可被发现且商业分级齐全。"""
+    reg = get_registry()
+    names = set(reg.discover())
+    assert {"scenes_pcg", "lighting_setup", "data_pipeline", "qa_smoke"} <= names
+    lighting = reg.load("lighting_setup").spec
+    assert lighting.tool_whitelist == ["lighting_place_directional", "lighting_set_postprocess"]
+    assert lighting.tier == 2 and lighting.distill_visibility == "lite"
+
+
+def test_skill_steps_map_to_registered_tools():
+    """每个 Skill 的执行步骤声明的 tool 都应在 toolset_registry 登记。"""
+    from orchestrator import toolset_registry as reg
+
+    for name in get_registry().discover():
+        spec = get_registry().load(name).spec
+        for s in spec.steps:
+            if s.tool:
+                assert reg.get_tool_meta(s.tool) is not None, f"Skill {name} 步骤 {s.id} 的 tool {s.tool} 未在 registry 登记"
+
+
+def test_lighting_steps_tools_registered():
+    from orchestrator import toolset_registry as reg
+
+    spec = get_registry().load("lighting_setup").spec
+    step_tools = {s.tool for s in spec.steps if s.tool}
+    for t in step_tools:
+        assert reg.get_tool_meta(t) is not None
