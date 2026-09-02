@@ -164,17 +164,59 @@ def import_skills(
 @app.command("demo-concept")
 def demo_concept(
     direction: str = typer.Option(..., "--direction", "-d", help="模糊的游戏方向一句话"),
+    persist: bool = typer.Option(True, "--persist/--dry", help="持久化到 shared_state/runs/<runId>（默认开；--dry 仅内存预览）"),
 ) -> None:
-    """演示：多 Skill(S1→S2→S3→S6→Director→E6) 协同产出核心玩法提案并评估。
+    """演示：多 Skill(S1→S2→S3→S6→Director→E6) 协同产出可持久化的核心玩法提案并评估。
 
-    直接用真实 LLM（读 .env）逐个策略/生产/评估 Skill 产出内容，并按 SharedState 信封
-    （含 parent_hash）落到 shared_state/，最后打印结构化提案 + GO/NO-GO 结论。
+    用真实 LLM（读 .env）。默认按 run-id 版本化落盘到 shared_state/runs/<runId>/ 并写入
+    PROPOSAL.md + RUNMANIFEST.json + 各阶段 SharedState 信封（含 parent_hash 链），并把当前
+    runId 写进 shared_state/.ACTIVE_RUN，作为后续流程的输入/参考。
     """
-    from orchestrator.demo_concept import run_concept, render
+    from orchestrator.demo_concept import resolve_active, run_concept, render
 
     console.print(f"[bold]开始提案管线：{direction}[/]（真实 LLM，约 6 次调用）")
-    root = run_concept(direction)
+    root = run_concept(direction, do_persist=persist)
     console.print(render(root))
+    if persist:
+        active = resolve_active()
+        console.print(Panel(
+            f"[green]已设 ACTIVE run：{active}[/]\n"
+            f"信封/提案存于 shared_state/runs/{root.run_id}/（可供后续流程读取）",
+            title="持久化位置",
+        ))
+    else:
+        console.print("[dim]--dry：未落盘（仅内存预览）。[/]")
+
+
+@app.command("demo-active")
+def demo_active() -> None:
+    """查看当前 ACTIVE 概念 run 及其落盘内容。"""
+    from rich.panel import Panel
+
+    from orchestrator.demo_concept import resolve_active
+    from orchestrator.shared_state import SharedState
+
+    rid = resolve_active()
+    if not rid:
+        console.print("[yellow]尚无 ACTIVE run（先跑 demo-concept）[/]")
+        return
+    base = SharedState().base
+    run_dir = base / "runs" / rid
+    import json
+
+    manifest = {}
+    if (run_dir / "RUNMANIFEST.json").exists():
+        manifest = json.loads((run_dir / "RUNMANIFEST.json").read_text(encoding="utf-8"))
+    stages = manifest.get("stages", [])
+    stage_lines = "\n".join(f"  · {s['name']}  ← {s['producer']}" for s in stages)
+    console.print(Panel(
+        f"[bold]ACTIVE run[/]: {rid}\n"
+        f"方向：{manifest.get('direction', '-')}\n"
+        f"阶段:\n{stage_lines or '  (无)'}\n"
+        f"PROPOSAL.md: {run_dir}/PROPOSAL.md\n"
+        f"信封目录: {run_dir}/",
+        title="ACTIVE configuration",
+    ))
 
 
 @app.command("approve")

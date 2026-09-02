@@ -1,88 +1,108 @@
-"""demo_concept 管线确定性测试（不依赖真实 LLM）：
+"""demo_concept run-id 版本化存储测试（不依赖真实 LLM）：
 
-用假 router 返回固定文本，验证「策略→生产(Director)→评估(E6)」多 Skill 协同：
-- 六个产物阶段均产生 SharedState 信封（market/competitor/game_design/creative_direction/proposal/eval.benchmark）
-- parent_hash 链按顺序串起（每信封 parent 指向上一个信封 hash）
-- run_concept 输出可渲染（含六节与 SharedState 落盘清单）。
+用假 router 返回固定文本，验证：
+- run_concept 把流程写入 runs/<runId>/strategy|eval 信封，并写 PROPOSAL.md/RUNMANIFEST.json
+- .ACTIVE_RUN 被写入并可由 resolve_active 读回
+- 阶段信封 parent_hash 按 S1→…→E6 顺序串联
+- render / latest_verdict 可用
+- 单阶段 LLM 失败不致中断（占位回退）
 """
 from __future__ import annotations
 
-import asyncio
+import json
 
 import pytest
 
 
-class _FakeRouter:
-    def __init__(self, tag):
-        self.tag = tag
+class _CountingRouter:
+    def __init__(self):
+        self.n = 0
 
     async def complete(self, prompt, tier="default", system=None):
-        # 抛出一个能反映“是哪个阶段被调用”的可读片段
-        return f"[{self.tag or 'stage'}]\n实际内容为假生成但结构完整。" + prompt[:20]
+        self.n += 1
+        return f"[阶段-{self.n}] 假内容（确定性）。片段:{prompt[:18]}…"
 
 
-def _install(monkeypatch, tmp_path):
-    import orchestrator.demo_concept as dc
+class _Flaky:
+    async def complete(self, prompt, tier="default", system=None):
+        raise RuntimeError("simulated LLM failure")
+
+
+@pytest.fixture()
+def shared(tmp_path):
     from orchestrator.shared_state import SharedState
-
-    # 用假 router 避免真实网络/模型
-    calls = {}
-    class Counting:
-        def __init__(self): self.n = 0
-        async def complete(self, prompt, tier="default", system=None):
-            self.n += 1
-            return f"[阶段-{self.n}]\n假产物内容（用于确定性验证结构）。\n第一行提示: {prompt[:24]}…"
-    counting = Counting()
-    monkeypatch.setattr(dc, "get_router", lambda: counting)
-    # SharedState 写到临时目录，避免污染仓库 shared_state/
-    def fake_factory():
-        return SharedState(root=tmp_path)
-    monkeypatch.setattr(dc, "SharedState", fake_factory)
-    # 禁默认（tier 已固定 default）无关
-    return dc, counting
+    return SharedState(root=tmp_path)
 
 
-@pytest.fixture(params=["demo_concept"])
-def _module(request):
-    return request.param
+def test_concept_run_persists_and_active(monkeypatch, shared):
+    import orchestrator.demo_concept as dc
 
+    router = _CountingRouter()
+    monkeypatch.setattr(dc, "get_router", lambda: router)
 
-def test_concept_pipeline_envelope_chain(monkeypatch, tmp_path):
-    dc, counting = _install(monkeypatch, tmp_path)
-    root = dc.run_concept("探索驱动+收集符文开门+暗黑奇幻+轻战斗")
-    # 六阶段都产生信封
-    for k in ("market", "competitor", "game_design", "creative_direction", "proposal", "eval/benchmark"):
-        assert f"{k}/json" in root.artifacts, f"缺少 {k} 信封"
+    root = dc.run_concept("探索+符文开门+暗黑奇幻+轻战斗", shared=shared)
+    base = shared.base
 
-    # parent_hash 链按顺序串联（后一个 parent == 前一个 hash）
-    order = ["market", "competitor", "game_design", "creative_direction", "proposal", "eval/benchmark"]
-    prev_hash = ""
-    for k in order:
-        env = root.artifacts[f"{k}/json"]
-        assert env["parent_hash"] == prev_hash, f"{k} 的 parent 与上一阶段 hash 不一致"
-        prev_hash = dc.hash_envelope(env)
+    # 六个阶段都有信封
+    expect = ["market", "competitor", "game_design", "creative_direction", "proposal", "eval_benchmark"]
+    for name in expect:
+        assert name in root.envelopes, name
 
-    # 可渲染（含每一节与 SharedState 落盘清单）
+    # parent 链顺序（下一阶段 parent == 上一阶段 hash）
+    prev = ""
+    for name in expect:
+        env = root.envelopes[name]
+        assert env["parent_hash"] == prev, name
+        prev = dc.hash_envelope(env)
+
+    # 落盘在 runs/<rid> 下：PROPOSAL.md / RUNMANIFEST.json / 各信封
+    run_dir = base / "runs" / root.run_id
+    assert run_dir.exists()
+    assert (run_dir / "PROPOSAL.md").exists()
+    assert (run_dir / "RUNMANIFEST.json").exists()
+    assert (run_dir / "strategy" / "market.json").exists()
+    assert (run_dir / "eval" / "benchmark.json").exists()
+
+    # ACTIVE 指针
+    assert (base / ".ACTIVE_RUN").read_text(encoding="utf-8") == root.run_id
+    assert dc.resolve_active(shared) == root.run_id
+
+    # manifest 一致
+    m = json.loads((run_dir / "RUNMANIFEST.json").read_text(encoding="utf-8"))
+    assert m["run_id"] == root.run_id
+    assert len(m["stages"]) == 6
+
+    # render
     md = dc.render(root)
-    for k_sect in ["市场(S1)", "竞品(S2)", "玩法设计(S3)", "创意方向(S6)", "导演立项目标", "横向基准评估(E6)", "SharedState 落盘信封"]:
-        assert k_sect in md
+    for sec in ["市场(S1)", "竞品(S2)", "玩法设计(S3)", "创意方向(S6)", "导演立项目标(Director)",
+                "横向基准评估(E6)", "SharedState 落盘信封", root.run_id]:
+        assert sec in md
 
 
-def test_concept_llm_failure_not_fatal(monkeypatch, tmp_path):
-    """某个阶段 LLM 失败不应中断整个管线（占位回退）。"""
+def test_run_ids_unique(monkeypatch, shared):
+    from orchestrator.demo_concept import _run_id, run_concept
+    a = _run_id()
+    b = _run_id()
+    assert a != b
+    # 两次 run 落在不同 run 目录（版本化）
+    router = _CountingRouter()
+    monkeypatch.setattr("orchestrator.demo_concept.get_router", lambda: router)
+    r1 = run_concept("方向A", shared=shared)
+    r2 = run_concept("方向B", shared=shared)
+    assert r1.run_id != r2.run_id
+    assert (shared.base / "runs" / r1.run_id).exists()
+    assert (shared.base / "runs" / r2.run_id).exists()
+
+
+def test_llm_failure_not_fatal_and_dry(monkeypatch, shared):
     import orchestrator.demo_concept as dc
-    from orchestrator.shared_state import SharedState
+    monkeypatch.setattr(dc, "get_router", lambda: _Flaky())
 
-    class Flaky:
-        async def complete(self, prompt, tier="default", system=None):
-            raise RuntimeError("simulated failure")
-    monkeypatch.setattr(dc, "get_router", lambda: Flaky())
-    def ff():
-        return SharedState(root=tmp_path)
-    monkeypatch.setattr(dc, "SharedState", ff)
-
-    root = dc.run_concept("方向")
-    # 占位文本不会中断；六阶段信封与父链仍在（占位也写 envelope）
-    assert "eval/benchmark/json" in root.artifacts
+    # dry：do_persist=False 不写盘但仍产出占位信封
+    root = dc.run_concept("方向", shared=shared, run_id="run-x", do_persist=False)
+    assert "proposal" in root.envelopes
+    assert "eval_benchmark" in root.envelopes
+    # 不写盘
+    assert not (shared.base / ".ACTIVE_RUN").exists()
     md = dc.render(root)
     assert "（该阶段模型调用失败" in md
