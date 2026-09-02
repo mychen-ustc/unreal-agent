@@ -1,0 +1,21 @@
+name: eval_gameplay_fun
+description: "批判核心玩法/手感/数值失衡 → /eval/gameplay"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - eval_submit
+  - playtest_smoke
+
+risk: mutating

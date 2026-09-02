@@ -1,0 +1,23 @@
+name: gameplay_dev
+description: "生成 Verse/C++ 玩法规格并编译/测"
+default_tier: default
+
+tier: 4
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - build_live_coding
+  - build_run_pie_tests
+  - rag_search
+  - project_list_directory
+
+risk: mutating

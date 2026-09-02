@@ -1,0 +1,20 @@
+name: eval_design_economy
+description: "批判关卡/解谜/收集奖惩/时间经济 → /eval/design"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - eval_submit
+
+risk: mutating

@@ -1,0 +1,23 @@
+name: narrative_writer
+description: "产出剧情/对白/文案片段到 /narrative"
+default_tier: default
+
+tier: 2
+distill_visibility: lite
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - report_write
+  - rag_search
+  - safeguard_check_path
+  - project_list_directory
+
+risk: mutating

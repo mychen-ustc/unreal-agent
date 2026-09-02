@@ -1,0 +1,23 @@
+name: system_designer
+description: "数值/经济/战斗数值设计规格到 /system_balance"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - table_design
+  - report_write
+  - rag_search
+  - data_validate_rows
+
+risk: mutating

@@ -1,0 +1,22 @@
+name: enemy_boss_design
+description: "敌人/Boss 白皮书(行为/攻击/数值/难度)到 /character/enemies"
+default_tier: strong
+
+tier: 4
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - report_write
+  - safeguard_check_path
+  - project_list_directory
+
+risk: mutating

@@ -1,0 +1,22 @@
+name: asset_retriever
+description: "从 Fab/Quixel/本地检索资产引用列表"
+default_tier: default
+
+tier: 2
+distill_visibility: full
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - rag_search
+  - project_list_directory
+  - report_write
+
+risk: mutating

@@ -19,25 +19,55 @@ log = logging.getLogger(__name__)
 
 # P0:关键词兜底映射（LLM 选型不可用/失败时回退）
 _KEYWORD_MAP = {
-    "pcg": "scenes_pcg",
-    "场景": "scenes_pcg",
-    "地形": "scenes_pcg",
-    "森林": "scenes_pcg",
-    "level": "scenes_pcg",
-    "light": "lighting_setup",
-    "灯光": "lighting_setup",
-    "光照": "lighting_setup",
-    "布光": "lighting_setup",
-    "postprocess": "lighting_setup",
-    "data": "data_pipeline",
-    "datatable": "data_pipeline",
-    "csv": "data_pipeline",
-    "数值": "data_pipeline",
-    "qa": "qa_smoke",
-    "smoke": "qa_smoke",
-    "冒烟": "qa_smoke",
-    "可玩性": "qa_smoke",
-    "测试": "qa_smoke",
+    # 场景/PCG
+    "pcg": "scenes_pcg", "场景": "scenes_pcg", "地形": "scenes_pcg", "森林": "scenes_pcg", "level": "scenes_pcg",
+    "生成地图": "scenes_pcg",
+    # 灯光
+    "灯光": "lighting_setup", "光照": "lighting_setup", "布光": "lighting_setup", "postprocess": "lighting_setup",
+    # 数据/数值落地
+    "csv": "data_pipeline", "datatable": "data_pipeline", "data": "data_pipeline",
+    # QA 冒烟
+    "冒烟": "qa_smoke", "smoke": "qa_smoke", "可玩性测试": "qa_smoke",
+    # 策略：市场调研
+    "market": "s1_market_research", "市场 ": "s1_market_research", "市场调研": "s1_market_research", "受众": "s1_market_research",
+    # 竞品
+    "竞品": "s2_competitive_intel", "competitor": "s2_competitive_intel",
+    # 玩法设计
+    "玩法": "s3_game_design", "核心玩法": "s3_game_design", "game design": "s3_game_design",
+    # 商业
+    "商业": "s4_business_strategy", "定价": "s4_business_strategy", "monetization": "s4_business_strategy",
+    # 技术可行性
+    "可行性": "s5_tech_feasibility", "tech 评估": "s5_tech_feasibility",
+    # 创意/世界观
+    "世界观": "s6_creative_direction", "创意方向": "s6_creative_direction", "情绪板": "s6_creative_direction",
+    # 预生产
+    "gdd": "director", "导演": "director",
+    "风格指南": "concept_artist", "concept": "concept_artist",
+    "关卡设计": "level_designer", "动线": "level_designer", "blockout": "level_designer",
+    "叙事": "narrative_writer", "剧情": "narrative_writer", "对白": "narrative_writer", "文案": "narrative_writer",
+    "数值设计": "system_designer", "系统设计": "system_designer", "经济": "system_designer",
+    # 生产
+    "资产": "asset_retriever", "fab": "asset_retriever", "检索": "asset_retriever",
+    "生成3d": "asset3d_generator", "生成纹理": "asset3d_generator", "模型生成": "asset3d_generator",
+    "玩法实现": "gameplay_dev", "代码": "gameplay_dev", "verse": "gameplay_dev", "cpp": "gameplay_dev",
+    "音效": "audio_setup", "音频": "audio_setup", "环境音": "audio_setup",
+    "ui": "ui_setup", "hud": "ui_setup", "界面": "ui_setup",
+    "材质": "technical_artist", "渲染": "technical_artist", "技术美术": "technical_artist",
+    "角色": "player_character_design", "手感": "player_character_design",
+    "敌人": "enemy_boss_design", "boss": "enemy_boss_design", "怪物": "enemy_boss_design",
+    "动画": "animation_design", "动作": "animation_design",
+    # 验证
+    "性能": "profiler_skill", "帧率": "profiler_skill", "profiler": "profiler_skill",
+    "打包": "build_agent", "cook": "build_agent",
+    # 评估
+    "体验评估": "eval_experience", "节奏批判": "eval_experience",
+    "美术评估": "eval_content",
+    "可玩评估": "eval_gameplay_fun", "手感评估": "eval_gameplay_fun",
+    "经济批判": "eval_design_economy",
+    "商业化评估": "eval_monetization",
+    "横评": "eval_benchmark", "对比评测": "eval_benchmark", "竞品对比": "eval_benchmark",
+    "横向对比": "eval_benchmark", "横向": "eval_benchmark", "对拍": "eval_benchmark",
+    "玩家研究": "playtest_researcher",
 }
 
 
@@ -66,7 +96,8 @@ class Host:
             if kw in low:
                 return skill
         names = self.registry.discover()
-        return names[0] if names else "general"
+        # 未命中明确领域：优先落到综合入口 director（能把任务细分），其次取第一个可用 skill
+        return "director" if "director" in names else (names[0] if names else "general")
 
     def select_skill(self, instruction: str) -> str:
         """从已装载 Skill 中选出最适合指令的名称。

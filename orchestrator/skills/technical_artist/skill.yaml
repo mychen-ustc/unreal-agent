@@ -1,0 +1,23 @@
+name: technical_artist
+description: "主材质/渲染规范 + 生成资产技术校验/性能建议"
+default_tier: default
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - art_configure_nanite
+  - rag_search
+  - profiler_report
+  - project_list_directory
+
+risk: mutating

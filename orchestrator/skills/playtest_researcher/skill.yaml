@@ -1,0 +1,21 @@
+name: playtest_researcher
+description: "收录游玩轨迹量化玩家卡点 → /eval/playtest"
+default_tier: default
+
+tier: 2
+distill_visibility: full
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - playtest_smoke
+  - eval_submit
+
+risk: mutating

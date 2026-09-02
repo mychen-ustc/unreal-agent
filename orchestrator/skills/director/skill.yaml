@@ -1,0 +1,23 @@
+name: director
+description: "解析意图生成结构化 GDD 与任务拆解到 /gdd/main"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - report_write
+  - rag_search
+  - safeguard_check_path
+  - project_list_directory
+
+risk: mutating

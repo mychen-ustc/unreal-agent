@@ -1,0 +1,17 @@
+# 由 gen 脚本生成（对齐 Common Spec）
+- id: plan
+  severity: read_only
+  tier: fast
+  tool: safeguard_check_path
+- id: produce
+  dependencies: [plan]
+  severity: mutating
+  tier: strong
+  tool: report_write
+  tool_args:
+    skill: player_character_design
+- id: verify
+  dependencies: [produce]
+  severity: read_only
+  tier: fast
+  tool: project_list_directory

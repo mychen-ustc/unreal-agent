@@ -1,0 +1,23 @@
+name: s4_business_strategy
+description: "收入模型/定价/平台策略/盈亏推演到 /strategy/business_model"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - rag_search
+  - report_write
+  - safeguard_check_path
+  - project_list_directory
+
+risk: mutating

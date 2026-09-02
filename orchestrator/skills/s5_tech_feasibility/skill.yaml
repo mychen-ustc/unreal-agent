@@ -1,0 +1,22 @@
+name: s5_tech_feasibility
+description: "技术可行性与范围估算风险清单到 /strategy/tech_feasibility"
+default_tier: strong
+
+tier: 3
+distill_visibility: lite
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - rag_search
+  - report_write
+  - project_list_directory
+
+risk: mutating

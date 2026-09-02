@@ -1,0 +1,22 @@
+name: s3_game_design
+description: "基于市场缺口提出核心玩法方案/机制到 /strategy/game_design"
+default_tier: strong
+
+tier: 3
+distill_visibility: lite
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - rag_search
+  - report_write
+  - project_list_directory
+
+risk: mutating

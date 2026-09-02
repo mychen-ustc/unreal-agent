@@ -1,0 +1,20 @@
+name: eval_content
+description: "批判美术/氛围/音频一致性/UI → /eval/content"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - eval_submit
+
+risk: mutating

@@ -27,5 +27,6 @@ tool_whitelist:
   - pcg_generate_graph
   - pcg_validate
   - place_actor
+  - project_list_directory
 
 risk: mutating

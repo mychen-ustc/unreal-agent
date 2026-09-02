@@ -1,0 +1,23 @@
+name: player_character_design
+description: "玩家角色体感/动作风格/手感 KPI 到 /character/player"
+default_tier: strong
+
+tier: 4
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - report_write
+  - image_concept
+  - safeguard_check_path
+  - project_list_directory
+
+risk: mutating

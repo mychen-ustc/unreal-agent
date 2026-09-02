@@ -1,0 +1,7 @@
+# 由 gen 脚本生成（对齐 Common Spec）
+- id: submit_eval
+  severity: mutating
+  tier: default
+  tool: playtest_smoke
+  tool_args:
+    target: playtest_researcher

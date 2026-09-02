@@ -1,0 +1,22 @@
+name: eval_experience
+description: "批判关卡节奏/动线/挫败曲线 → 体验痛点 /eval/experience"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - eval_submit
+  - rag_search
+  - playtest_smoke
+
+risk: mutating

@@ -1,0 +1,21 @@
+name: eval_monetization
+description: "批判定价/内容量/平台/回收 → /eval/monetization"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - eval_submit
+  - rag_search
+
+risk: mutating

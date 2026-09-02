@@ -1,0 +1,23 @@
+name: audio_setup
+description: "按场景放置环境音与 SFX Cue"
+default_tier: default
+
+tier: 2
+distill_visibility: lite
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - audio_place_ambient
+  - audio_create_sound_cue
+  - rag_search
+  - project_list_directory
+
+risk: mutating

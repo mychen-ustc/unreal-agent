@@ -61,6 +61,7 @@ _ARTPIPELINE_TOOLS = [
 _BUILD_TOOLS = [
     ToolMeta("build_live_coding", "编译代码（Live Coding）", MUTATING, "BuildToolset"),
     ToolMeta("build_run_pie_tests", "启动 PIE 跑自动化测试，返回通过/失败+截图", MUTATING, "BuildToolset"),
+    ToolMeta("build_cook_run", "打平台包（UBT cook/run，destructive 人工审批）", DESTRUCTIVE, "BuildToolset"),
 ]
 _LIGHTING_TOOLS = [
     ToolMeta("lighting_place_directional", "放置 Directional Light", MUTATING, "LightingToolset"),
@@ -86,6 +87,20 @@ _PLAYTEST_TOOLS = [
 _BENCHMARK_TOOLS = [
     ToolMeta("benchmark_align", "把本游产物与竞品某维度对齐打分", READ_ONLY, "BenchmarkToolset"),
 ]
+
+
+# 内容生产 / 分析 / 评估 类工具（供策略 S1–S6、预生产 W1/ND、评估 E1–E6 等非引擎执行型 Skill 步骤落点）
+_ANALYSIS_GENERATION_TOOLS = [
+    ToolMeta("rag_search", "检索 UE 文档/项目规范/已验证产物（RAG getrounding）", READ_ONLY, "AnalysisToolset"),
+    ToolMeta("rag_ingest", "把已验证片段/决策写入长期记忆（LanceDB）", MUTATING, "AnalysisToolset"),
+    ToolMeta("report_write", "把结构化方案/提案/报告写入 shared_state/（如 /strategy/）", MUTATING, "AnalysisToolset"),
+    ToolMeta("eval_submit", "把评估结论写入 /eval/*（评估 Skill 的唯一写口）", MUTATING, "AnalysisToolset"),
+    ToolMeta("image_concept", "生成概念/参考图（图像 API，供概念/角色/敌人方向）", MUTATING, "AnalysisToolset"),
+    ToolMeta("asset_generate_3d", "外部 3D/纹理生成入口（风格约束下）", MUTATING, "AnalysisToolset"),
+    ToolMeta("table_design", "产出数值/经济/Datatable 规格草稿（System Designer 用）", MUTATING, "AnalysisToolset"),
+]
+
+
 # 通用（不做 Toolset 归属，供脚手架）：
 _GENERIC_TOOLS = [
     ToolMeta("list_tools", "列出全部工具及 JSON Schema", READ_ONLY, "Registry"),
@@ -103,8 +118,10 @@ TWELVE_TOOLSET_TOOLS: list[ToolMeta] = (
     + _DATA_TOOLS + _PROFILER_TOOLS + _PLAYTEST_TOOLS + _BENCHMARK_TOOLS
 )
 
-# 完整工具清单（12 个自研 Toolset + 通用/脚手架工具）
-ALL_TOOLS: list[ToolMeta] = TWELVE_TOOLSET_TOOLS + _GENERIC_TOOLS
+# 完整工具清单（12 个自研 Toolset + 内容生产/分析类 + 通用脚手架工具）
+ALL_TOOLS: list[ToolMeta] = (
+    TWELVE_TOOLSET_TOOLS + _ANALYSIS_GENERATION_TOOLS + _GENERIC_TOOLS
+)
 
 _TOOLS_BY_NAME: dict[str, ToolMeta] = {t.name: t for t in ALL_TOOLS}
 

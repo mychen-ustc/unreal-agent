@@ -1,0 +1,21 @@
+name: eval_benchmark
+description: "与现有游戏横向全维度对比 → /eval/benchmark + GO/NO-GO"
+default_tier: strong
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - eval_submit
+  - benchmark_align
+
+risk: mutating

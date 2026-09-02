@@ -1,0 +1,22 @@
+name: s2_competitive_intel
+description: "扫描竞品、生成竞品矩阵与差异化缺口到 /strategy/competitor_matrix"
+default_tier: strong
+
+tier: 3
+distill_visibility: lite
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - rag_search
+  - report_write
+  - project_list_directory
+
+risk: mutating

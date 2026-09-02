@@ -1,0 +1,24 @@
+name: level_designer
+description: "产出 Blockout 规格(waypoints/zones/pacing)到 /level/blockout"
+default_tier: strong
+
+tier: 3
+distill_visibility: lite
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - rag_search
+  - report_write
+  - place_actor
+  - safeguard_check_path
+  - project_list_directory
+
+risk: mutating

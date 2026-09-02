@@ -1,0 +1,23 @@
+name: animation_design
+description: "动作状态机/外购动画质检到 /character/animation"
+default_tier: default
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - rag_search
+  - report_write
+  - safeguard_check_path
+  - project_list_directory
+
+risk: mutating

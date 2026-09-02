@@ -1,0 +1,7 @@
+# 由 gen 脚本生成（对齐 Common Spec）
+- id: submit_eval
+  severity: mutating
+  tier: default
+  tool: eval_submit
+  tool_args:
+    target: eval_content

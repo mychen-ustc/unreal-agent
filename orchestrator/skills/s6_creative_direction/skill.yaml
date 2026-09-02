@@ -1,0 +1,23 @@
+name: s6_creative_direction
+description: "世界观/叙事基调/视觉与音频策略/情绪板到 /strategy/creative_direction"
+default_tier: strong
+
+tier: 3
+distill_visibility: lite
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - image_concept
+  - report_write
+  - rag_search
+  - data_validate_rows
+
+risk: mutating

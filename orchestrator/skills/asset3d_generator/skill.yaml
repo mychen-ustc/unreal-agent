@@ -1,0 +1,24 @@
+name: asset3d_generator
+description: "按风格生成纹理/3D 并导入 UE → Nanite"
+default_tier: default
+
+tier: 3
+distill_visibility: hidden
+
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "任务" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+
+tool_whitelist:
+  - asset_generate_3d
+  - art_import_mesh
+  - art_configure_nanite
+  - rag_search
+  - data_validate_rows
+
+risk: mutating
