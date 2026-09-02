@@ -1,0 +1,26 @@
+# Skill 元数据：Data Pipeline（预生产组 · ④ Data Agent，对应 PRD §4.2 DataTable 管线）
+name: data_pipeline
+description: "把玩法数值 / CSV 导入 DataTable，创建并校验 DataTable 资产"
+default_tier: default
+
+# 商业分级：数据资产化属基础能力，外部可展示
+tier: 1
+distill_visibility: lite
+
+input_schema:
+  type: object
+  required: [csv_path]
+  properties:
+    csv_path:    { type: string, description: "CSV 文件路径" }
+    table_name:  { type: string, description: "目标 DataTable 资产名" }
+
+output_schema:
+  type: object
+  properties:
+    datatable_path: { type: string }
+
+tool_whitelist:
+  - data_csv_to_datatable
+  - data_validate_rows
+
+risk: mutating

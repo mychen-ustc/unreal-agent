@@ -1,9 +1,13 @@
 # scenes_pcg 内部步骤（对应 DAG 节点）
 # 以领域角色内部流程为例：规划 → 生成 → 验证（依赖 / 回退阈值）
+# `tool` 字段映射到 orchestrator/toolset_registry.py 登记的工具名（须在 tool_whitelist 内）
 - id: plan_spec
   shared_state_refs: ["/level/blockout.json", "/art/style_guide.json"]
   severity: read_only
   tier: default
+  tool: project_list_directory
+  tool_args:
+    path: "/Game/Generated/PCG"
 
 - id: generate_graph
   dependencies: [plan_spec]
@@ -11,9 +15,14 @@
   severity: mutating
   tier: strong
   partition: north_zone
+  tool: pcg_generate_graph
+  tool_args:
+    biome: temperate_forest
+    graph_path: "/Game/Generated/PCG/Biome_Forest"
 
 - id: validate
   dependencies: [generate_graph]
   shared_state_refs: ["/Generated/PCG/"]
   severity: read_only
   tier: fast
+  tool: pcg_validate

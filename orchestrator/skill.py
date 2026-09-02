@@ -33,6 +33,8 @@ class SkillStep:
     tier: str = "default"            # fast | default | strong
     priority: int = 100
     partition: Optional[str] = None   # 空间分区（可选）
+    tool: str = ""                    # 可选：映射到具体 MCP 工具名（须在 tool_whitelist 内）
+    tool_args: dict = field(default_factory=dict)  # 给该工具的参数（静态占位；动态由 runner 注入）
 
 
 @dataclass
@@ -136,6 +138,8 @@ class SkillRegistry:
                     tier=item.get("tier", "default"),
                     priority=int(item.get("priority", 100)),
                     partition=item.get("partition"),
+                    tool=item.get("tool", ""),
+                    tool_args=dict(item.get("tool_args", {}) or {}),
                 )
             )
         return steps

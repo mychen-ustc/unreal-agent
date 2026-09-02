@@ -1,0 +1,27 @@
+# Skill 元数据：QA 冒烟（验证与交付组 · ⑬ Reviewer/QA，对应 §12.6 可玩性冒烟自证）
+name: qa_smoke
+description: "自动走通关卡 spawn→collect→open 最小路径，返回可玩性冒烟结果（工程验证，非用户立场评估）"
+default_tier: default
+
+# 商业分级：验证属工程侧基础能力，可对外展示（引流 Demo 需要它证明可玩）
+tier: 1
+distill_visibility: full
+
+input_schema:
+  type: object
+  required: [level]
+  properties:
+    level:     { type: string, description: "关卡路径" }
+    waypoints: { type: array, description: "关键路径点" }
+
+output_schema:
+  type: object
+  properties:
+    reachable: { type: boolean }
+    blockers:  { type: array }
+
+tool_whitelist:
+  - playtest_smoke
+  - build_run_pie_tests
+
+risk: mutating

@@ -22,7 +22,22 @@ _KEYWORD_MAP = {
     "pcg": "scenes_pcg",
     "场景": "scenes_pcg",
     "地形": "scenes_pcg",
+    "森林": "scenes_pcg",
     "level": "scenes_pcg",
+    "light": "lighting_setup",
+    "灯光": "lighting_setup",
+    "光照": "lighting_setup",
+    "布光": "lighting_setup",
+    "postprocess": "lighting_setup",
+    "data": "data_pipeline",
+    "datatable": "data_pipeline",
+    "csv": "data_pipeline",
+    "数值": "data_pipeline",
+    "qa": "qa_smoke",
+    "smoke": "qa_smoke",
+    "冒烟": "qa_smoke",
+    "可玩性": "qa_smoke",
+    "测试": "qa_smoke",
 }
 
 
@@ -34,6 +49,7 @@ class Host:
         trace: TraceWriter | None = None,
         registry: SkillRegistry | None = None,
         use_llm_select: bool = True,
+        step_param_provider=None,
     ) -> None:
         self.mcp = mcp
         self.router = router or ModelRouter()
@@ -41,6 +57,8 @@ class Host:
         self.registry = registry or SkillRegistry()
         # LLM 选型开关：默认开；失败自动回退关键词（保证 stub/离线可用）
         self.use_llm_select = use_llm_select
+        # step_param_provider(node, base_args) -> dict：可选，为 Skill 步骤注入动态工具参数
+        self.step_param_provider = step_param_provider
 
     def _keyword_fallback(self, instruction: str) -> str:
         low = instruction.lower()
@@ -122,15 +140,40 @@ class Host:
 
         async def runner(task_id: str) -> None:
             node = dag.nodes[task_id]
+            step = _find_step(spec.steps, node.step)
+            tool_name = (step.tool if step else "") or _first_whitelist_tool(spec)
             self.trace.tool_call(
                 tool=f"skill:{node.skill}:{node.step}",
-                args={"instruction": instruction},
+                args={"instruction": instruction, "tool": tool_name},
                 outcome={"tier": node.tier, "severity": node.severity},
                 producer=node.producer,
             )
-            # 真实工具调用：当前经 MCP 唯一写入者（P0 many steps 无真 UE，gate 保留）
-            # TODO(P1): 把 Skill 步骤映射到具体 Tool 白名单内的 Tool 调用。
+            if tool_name:
+                # 经 MCP 唯一写入者真实调用工具（桩态记录 + 审批门；真 UE 走 HTTP）
+                args = dict(step.tool_args) if step else {}
+                if self.step_param_provider:
+                    args = {**args, **(self.step_param_provider(node, args) or {})}
+                res = self.mcp.call_tool(tool_name, args, risk=node.severity,
+                                         metadata={"skill": node.skill, "step": node.step})
+                log.info("步骤 %s → tool %s: ok=%s code=%s", node.step, tool_name, res.ok, res.error_code)
+                if not res.ok:
+                    raise RuntimeError(f"tool {tool_name} 失败: {res.error_code} {res.detail}")
+            else:
+                log.warning("步骤 %s 未声明 tool 且无白名单工具，跳过真实调用", node.step)
 
         scheduler = Scheduler(dag=dag, runner=runner, max_concurrent=len(spec.steps))
         executed = asyncio.run(scheduler.run())
         return {"skill": name, "steps_executed": executed, "steps": [s.id for s in spec.steps]}
+
+
+def _find_step(steps, step_id):
+    """在 SkillSpec.steps 里按 id 找步骤；找不到返回 None。"""
+    for s in steps:
+        if s.id == step_id:
+            return s
+    return None
+
+
+def _first_whitelist_tool(spec) -> str:
+    """取 tool_whitelist 的第一个工具（供未声明 tool 的步骤兜底）。"""
+    return spec.tool_whitelist[0] if spec.tool_whitelist else ""

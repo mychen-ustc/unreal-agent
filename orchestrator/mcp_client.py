@@ -95,16 +95,17 @@ class HttpTransport:
 
 
 class StubTransport:
-    """无 UE 时的本地桩（脚手架/CI 自检）。只回显 list_tools，写调用抛『需 UE 在线』。"""
+    """无 UE 时的本地桩（脚手架/CI 自检）。
 
-    TOOLS = [
-        {"name": "pcg_generate_graph", "description": "按 JSON 规格生成/修改 PCG Graph 资产", "risk": "mutating"},
-        {"name": "place_actor", "description": "在关卡中放置 Actor", "risk": "mutating"},
-        {"name": "list_tools", "description": "列出全部 Tool 及 JSON Schema", "risk": "read_only"},
-        {"name": "git_commit", "description": "Agent 改动自动 commit（post-tool hook）", "risk": "mutating"},
-    ]
+    工具清单来自 toolset_registry（12 个自研 Toolset + 通用工具），使桩态下
+    list_tools 可返回全量工具、Skill/步骤可按名调用并记录（require_ue=False 时）。
+    require_ue=True 时写操作提示需连 UE（用于测试审批门/拦截）。
+    """
 
     def __init__(self, require_ue: bool = True) -> None:
+        from orchestrator import toolset_registry
+
+        self.TOOLS = toolset_registry.list_tools_dict()
         self.require_ue = require_ue
         self.log: list[dict] = []
 
@@ -113,8 +114,18 @@ class StubTransport:
             return {"tools": self.TOOLS}
         if method in ("ping", "initialize"):
             return {"ok": True}
-        if self.require_ue:
-            raise RuntimeError("UE 编辑器未在线（StubTransport：写操作需连接 UE 5.8 MCP Server）")
+        if method == "tools/call":
+            name = params.get("name", "")
+            meta = None
+            from orchestrator import toolset_registry
+
+            meta_dict = toolset_registry.get_tool_meta(name)
+            risk = meta_dict.risk if meta_dict else "read_only"
+            if risk in ("mutating", "destructive") and self.require_ue:
+                raise RuntimeError(f"UE 编辑器未在线（StubTransport：{name} 需连接 UE 5.8 MCP Server）")
+            self.log.append({"method": name, "params": params.get("arguments", {})})
+            return {"ok": True, "data": {"stubbed": True, "tool": name}}
+        # 只读单方法名（如 "project_list_directory"）也放行（桩态）
         self.log.append({"method": method, "params": params})
         return {"ok": True, "data": {"stubbed": True}}
 
@@ -180,6 +191,25 @@ def default_approver(tool_name: str, arguments: dict, risk: RiskLevel, metadata:
     console.print(f"[yellow]审批[/] 工具={tool_name} 风险={risk.value} 参数={_shorten(arguments)}")
     ans = input(f"  允许执行? [y/N]: ").strip().lower()
     return ans in ("y", "yes")
+
+
+def approve_all(tool_name: str, arguments: dict, risk: RiskLevel, metadata: dict) -> bool:
+    """审批门：直接放行（用于无交互自检 / 测试 / 显式 --auto-approve）。谨慎：跳过人工。"""
+    return True
+
+
+def approve_read_only(tool_name: str, arguments: dict, risk: RiskLevel, metadata: dict) -> bool:
+    """审批门：read_only 放行；写操作拒绝（测试/只读巡检用默认告警）。"""
+    return risk == RiskLevel.READ_ONLY
+
+
+def as_approver(policy: str) -> Any:
+    """按放行策略返回 approver：auto | read_only | prompt（默认交互）。"""
+    if policy == "auto":
+        return approve_all
+    if policy == "read_only":
+        return approve_read_only
+    return default_approver
 
 
 def _shorten(d: dict, maxlen: int = 120) -> str:

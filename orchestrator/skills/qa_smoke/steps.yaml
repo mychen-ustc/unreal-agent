@@ -1,0 +1,8 @@
+# qa_smoke 内部步骤（对应 DAG 节点）
+- id: smoke_pie
+  severity: mutating
+  tier: default
+  tool: playtest_smoke
+  tool_args:
+    level: "/Game/Maps/Demo_01"
+    waypoints: ["spawn", "collect_01", "gate"]

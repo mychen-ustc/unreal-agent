@@ -1,0 +1,20 @@
+# lighting_setup 内部步骤（对应 DAG 节点）
+# `tool` 字段映射到 orchestrator/toolset_registry.py 登记的工具名（须在 tool_whitelist 内）
+- id: place_directional
+  shared_state_refs: ["/art/style_guide.json"]
+  severity: mutating
+  tier: default
+  tool: lighting_place_directional
+  tool_args:
+    intensity: 2.0
+    direction_yaw: 120
+
+- id: set_postprocess
+  dependencies: [place_directional]
+  severity: mutating
+  tier: default
+  tool: lighting_set_postprocess
+  tool_args:
+    exposure_bias: -0.5
+    bloom: true
+    ambient_occlusion: true

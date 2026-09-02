@@ -1,6 +1,0 @@
-# scenes_pcg 可调用 Toolset 白名单（声明文件）
-# 实际注册在 UE 侧 ToolsetRegistry；此处供宿主/Skill 调用前静态校验。
-tools:
-  - pcg_generate_graph
-  - pcg_validate
-  - place_actor

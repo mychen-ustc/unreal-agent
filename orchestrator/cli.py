@@ -23,7 +23,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from orchestrator.dag import DagEngine, DagNode
-from orchestrator.mcp_client import McpClient, StubTransport
+from orchestrator.mcp_client import McpClient, StubTransport, as_approver
 from orchestrator.trace import TraceWriter, DEFAULT_LOG_DIR
 
 app = typer.Typer(help="UnrealAgent Orchestrator（P0 地基）")
@@ -64,17 +64,17 @@ def run(
     dry_run: bool = typer.Option(False, "--dry-run", help="只生成计划不执行"),
     engine_endpoint: str = typer.Option("http://127.0.0.1:8000/mcp", "--endpoint", help="UE MCP Server 地址"),
     use_stub: bool = typer.Option(True, "--stub/--no-stub", help="无 UE 时用本地桩（脚手架自检）"),
-    auto_approve_read_only: bool = typer.Option(True, "--auto-approve-read-only/--require-approval",
-                                                help="只读自动放行（默认开）"),
+    approval: str = typer.Option("prompt", "--approval",
+                                 help="审批策略：prompt(交互确认,默认) | auto(全放行,自检/CI) | read_only(只读放行)"),
 ) -> None:
-    """编排一次任务，跑通 DAG + Agent + MCP 门 + trace 日志。"""
+    """编排一次任务，跑通 Skill + DAG 调度 + MCP 工具调用 + 审批门 + trace。"""
     dag = DagEngine()
     _populate_dag(dag, task)
 
     with TraceWriter(DEFAULT_LOG_DIR / "trace.jsonl") as trace:
         # MCP client（唯一写入者）—— 脚手架默认用桩，连真 UE 时用 HTTP
         transport = HttpOrStub(engine_endpoint, use_stub)
-        mcp = McpClient(transport=transport)
+        mcp = McpClient(transport=transport, approver=as_approver(approval))
 
         # P0：走 Host/Skill 路径（薄宿主选 Skill 并按其 DAG 步骤执行）
         from orchestrator.host import Host

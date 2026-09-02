@@ -1,0 +1,27 @@
+# Skill 元数据：Lighting（生产组 · ⑧ Lighting，对应 PRD §4.2 灯光与后处理）
+name: lighting_setup
+description: "根据风格指南放置主光源/补光 + 配置 PostProcess Volume，达到风格指南定义的氛围"
+default_tier: default
+
+# 商业分级（Agent Harness §11.3）：灯光组装属中等价值，外部可轻量展示
+tier: 2
+distill_visibility: lite
+
+input_schema:
+  type: object
+  required: [level, mood]
+  properties:
+    level:      { type: string, description: "关卡/区域名" }
+    mood:       { type: string, description: "光照心境，如 cool_dim / warm / horror" }
+    style_ref:  { type: string, description: "风格指南路径" }
+
+output_schema:
+  type: object
+  properties:
+    light_setup: { type: object }
+
+tool_whitelist:
+  - lighting_place_directional
+  - lighting_set_postprocess
+
+risk: mutating
