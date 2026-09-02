@@ -26,7 +26,7 @@
 |---|---|---|---|---|
 | G-01 | 环境就绪 | Xcode、UE 5.8 源码版、conda、Redis、模型凭据、Git | 🟡 | 见 environment-setup §0；**唯一待办 MetalToolchain 组件**（带渲染编辑器会话） |
 | G-02 | 首次提交 | `orchestrator/`、`pyproject.toml`、`unreal/` 首次纳入 git | ❌ | 当前均为未跟踪（见 §3） |
-| G-03 | 测试骨架 | `tests/` 存在，P0 单元测试可跑（pytest 空跑通过） | ❌ | 当前无 `tests/` |
+| G-03 | 测试骨架 | `tests/` 存在，P0 单元测试可跑（pytest 空跑通过） | ✅ | `tests/` 已建（test_dag / test_skill_and_distill / test_scheduler_and_host，19 例 pytest 全过） |
 | G-04 | AC-P0-01 MCP 插件启用 | UE 插件启用 + `127.0.0.1:8000/mcp` 响应 | 🟡 | 依赖 G-01 补 MetalToolchain 后验证 |
 | G-05 | 审批/回滚 SOP 就绪 | 审批人已定、CLI 审批命令可用（非占位） | ❌ | 当前 `approve`/`rollback` 为**占位**（见 §2） |
 | G-06 | 凭据安全 | `.env` 不入库（已 gitignore）、密钥不写进文档/日志 | ✅ | .gitignore 已含 `.env` |

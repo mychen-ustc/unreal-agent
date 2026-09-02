@@ -53,11 +53,13 @@
 
 ```text
 orchestrator/
-├── cli.py            # Typer 入口：run / plan / approve / rollback / skills
-├── host.py           # 薄宿主：选 Skill 并调度
-├── skill.py + skills/# Skill 封装（scenes_pcg 为示例）
+├── cli.py            # Typer 入口：run / plan / skills / import / approve / rollback
+├── host.py           # 薄宿主：选 Skill + 用 DAG/调度器驱动其内部步骤
+├── skill.py + skills/# Common Spec Skill 封装（scenes_pcg 为示例，含商业 tier/distill）
+├── distiller.py      # ★ 能力蒸馏（§11.3）：完整能力包 → 对外 MVP 子集（tier<=2 裁剪）
+├── importers/        # ★ 跨宿主导入（§12）：蒸馏子集 → self_hosted/claude_code/codex/...
 ├── dag.py            # ★ 自研 DAG 状态机（依赖传播/stale/回退 ≤3）
-├── scheduler.py      # asyncio 调度器（拓扑 + 优先级）
+├── scheduler.py      # asyncio 调度器（拓扑 + 优先级 + 并发）
 ├── task_queue.py     # 优先级任务队列
 ├── durable/          # DurableProvider（base + local_sqlite）
 ├── models.py         # LiteLLM 封装 + fast/default/strong 三档路由
@@ -72,14 +74,15 @@ orchestrator/
 ```bash
 conda activate unreal-agent
 python -m orchestrator --help                       # 看命令
-python -m orchestrator skills                       # 列 Skill
+python -m orchestrator skills                       # 列 Skill（含商业 tier/distill）
 python -m orchestrator plan --task "搭玩法" --dry-run
-python -m orchestrator run --task "用 PCG 生成森林"   # 自动选 Skill + DAG 步骤 + trace
+python -m orchestrator run --task "用 PCG 生成森林"   # 选 Skill + DAG 调度其步骤 + trace
+python -m orchestrator import --target self_hosted --skills scenes_pcg   # 蒸馏子集注入宿主
 # 模型路由实测（需 .env）：python -c "import asyncio; from orchestrator.models import get_router; print(asyncio.run(get_router().complete('hi', tier='fast')))"
 ```
 
-**已实现（实测自检通过）**：模型路由（DeepSeek 连通）、DAG/拓扑/stale/回退、Skill 装载与步骤调度、MCP 桩 + 审批门、SQLite Durable、SharedState 信封、CLI + trace。
-**待后续**：连真 UE 的 MCP（`--no-stub` + `--endpoint`）、Skill 自动选型上 LLM/RAG、scheduler 并发接入、其余 32 个 Skill、LanceDB 真实检索。
+**已实现（实测自检通过）**：模型路由（DeepSeek 连通）、DAG/拓扑/stale/回退、Skill 装载 + **Scheduler 按依赖驱动步骤**、Skill 商业分级（tier/distill）、**distiller 能力蒸馏（tier<=2）**、**importers 跨宿主导入骨架**、MCP 桩 + 审批门、SQLite Durable、SharedState 信封、CLI + trace。
+**待后续**：连真 UE 的 MCP（`--no-stub` + `--endpoint`）、Skill 自动选型上 LLM/RAG、其余 32 个 Skill、LanceDB 真实检索、importers 补 claude_code/codex/openclaw/hermes 宿主格式。
 
 ---
 
