@@ -106,6 +106,10 @@ _GENERIC_TOOLS = [
     ToolMeta("list_tools", "列出全部工具及 JSON Schema", READ_ONLY, "Registry"),
     ToolMeta("git_commit", "mutating 后自动 commit（post-tool hook）", MUTATING, "Registry"),
     ToolMeta("place_actor", "在关卡中放置一个 Actor（AC-P0-06 最小闭环）", MUTATING, "Registry"),
+    # UE BasicSpawnToolset 别名（真调用仅经 UeMcpBackend 到 UE；offline 时由 Stub 占位）
+    ToolMeta("place_cube", "[UE alias→BasicSpawn.place_cube] 放置底层立方体", MUTATING, "Registry"),
+    ToolMeta("list_agent_cubes", "[UE alias→BasicSpawn.list_agent_cubes] 列出 agent 立方体", READ_ONLY, "Registry"),
+    ToolMeta("remove_cube", "[UE alias→BasicSpawn.remove_cube] 移除按 label 立方体", MUTATING, "Registry"),
 ]
 
 

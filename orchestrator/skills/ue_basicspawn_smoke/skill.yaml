@@ -1,0 +1,18 @@
+name: ue_basicspawn_smoke
+description: "真 UE 冒烟：在编辑器当前关卡放置/列举/移除一个底层立方体 StaticMeshActor（AC-P0-06/自研 BasicSpawnToolset）"
+default_tier: default
+tier: 0
+distill_visibility: full
+input_schema:
+  type: object
+  properties:
+    task: { type: string, description: "指令（suffix label）" }
+output_schema:
+  type: object
+  properties:
+    result: { type: object }
+tool_whitelist:
+  - place_cube
+  - list_agent_cubes
+  - remove_cube
+risk: mutating

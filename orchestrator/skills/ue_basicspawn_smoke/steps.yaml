@@ -1,0 +1,16 @@
+- id: place
+  severity: mutating
+  tier: default
+  tool: place_cube
+  tool_args: { label: AgentHostCube, location_z: 120.0 }
+- id: list
+  dependencies: [place]
+  severity: read_only
+  tier: fast
+  tool: list_agent_cubes
+- id: remove
+  dependencies: [list]
+  severity: mutating
+  tier: default
+  tool: remove_cube
+  tool_args: { label: AgentHostCube }

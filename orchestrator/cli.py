@@ -261,6 +261,37 @@ def ue_p0(
     console.print("  → " + r3[:200])
 
 
+@app.command("ue-run")
+def ue_run(
+    task: str = typer.Option(..., "--task", "-t", help="自然语言任务"),
+    skill: str = typer.Option("ue_basicspawn_smoke", "--skill", help="Skill（默认 ue_basicspawn_smoke）"),
+    endpoint: str = typer.Option("http://127.0.0.1:8000/mcp", "--endpoint"),
+) -> None:
+    """用真 UE MCP 后端驱动一个 Skill（host −−>) 生产步骤真调 UE；编辑器需 -ModelContextProtocolStartServer。"""
+    from orchestrator.trace import TraceWriter, DEFAULT_LOG_DIR as _DL
+    from orchestrator.host import Host
+    from orchestrator.ue_backend import UeMcpBackend
+    from rich.table import Table
+
+    backend = UeMcpBackend(endpoint=endpoint)
+    if not backend.ue.ensure_session():
+        console.print("[red]真 UE 后端不可用：编辑器未在线或 8000 未监听。[/]")
+        return
+    console.print(f"[green]UE 会话 OK，已发现工具集 {len(backend._cap)} + 工具 {len(backend.ue_tool_names())}[/]")
+    console.print("[dim]可见 UE 工具（抽样）：" + ", ".join(sorted(backend.ue_tool_names())[:14]))
+    with TraceWriter(_DL / "trace.jsonl") as trace:
+        host = Host(mcp=backend, trace=trace, use_llm_select=False)
+        res = host.run(task, skill_name=skill)
+    t = Table(title=f"host.run('{task}') → {res.get('skill')}（真 UE backend）")
+    t.add_column("step"); t.add_column("tool"); t.add_column("result")
+    # 打印每次 mcp 调用结果（从 backend 最新若干）
+    # backend 不逐条存日志,我们展示 run 汇总
+    for sname in res.get("steps", []):
+        t.add_row(sname, "-", "-")
+    console.print(t)
+    console.print(f"[green]步骤执行={res.get('steps_executed')}/{len(res.get('steps',[]))}；真 UE MCP 调用已产生（见 UE 编辑器）。[/]")
+
+
 @app.command("approve")
 def approve(
     task_id: str = typer.Option(..., "--task-id"),
