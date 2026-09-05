@@ -11,7 +11,7 @@
 
 | 项 | 约定 | 说明 |
 |---|---|---|
-| 引擎目录 | `/Users/Shared/UnrealEngine-5.8-source` | 独立于 Launcher 目录，源码版 |
+| 引擎目录 | 源码版 `/Users/Shared/UnrealEngine-5.8-source`；真机运行/验证可用 Epic 正式版 `/Users/Shared/Epic Games/UE_5.8`（已含 MetalToolchain） | 发布验证用正式版更稳 |
 | 引擎分支 | `5.8`（UE5 末代 LTS） | 锁定额分支，避免漂移 |
 | 是否入库 | **不入库**（/Users/Shared 下，独立于仓库） | 仓库只放项目 `.uproject` 与描述 |
 | 项目 | `unreal/UnrealAgent.uproject` | 仓库内 |
@@ -50,6 +50,37 @@
 
 - **冷编译纪律**：优先 Live Coding；全量放异步队列/nightly，不阻塞 Agent 循环（TechDesign §11）。
 - **构建缓存**：DerivedDataCache / Intermediate 在 `.gitignore`，可被重建。
+
+### 3.1 真编辑器 · MCP 会话 · 自研 Python Toolset · AC-P0（Runbook）
+
+> 这些是本项目接真引擎的关键操作（已验证，防丢）。启动后以编辑器实际路径/项目替换占位。
+
+**0) 启用 MCP 三件套 + Python 脚本**（`unreal/UnrealAgent.uproject` 的 `Plugins`）：
+`ModelContextProtocol`、`ToolsetRegistry`、`AllToolsets`、`PythonScriptPlugin` 均 `Enabled:true`。
+
+**1) 启动编辑器并拉起 MCP Server**（关键 flag，默认不自动起）：
+```bash
+# 让 127.0.0.1:8000/mcp 监听（-ModelContextProtocolStartServer；顺带项目 Python init 注册自研 toolset）
+"/Users/Shared/Epic Games/UE_5.8/Engine/Binaries/Mac/UnrealEditor" \
+  /path/to/unreal/UnrealAgent.uproject -unattended -nosplash -nop4 \
+  -ModelContextProtocolStartServer
+# 就绪自检：POST /mcp 的 initialize 会回 Mcp-Session-Id；lsof -iTCP:8000 应 LISTEN
+```
+
+**2) 自研 Python Toolset 注册（本仓库项目侧）**：
+- 放 `unreal/Content/Python/basic_spawn/basic_spawn_tools.py`（`@unreal.uclass()` + `@toolset_registry.tool_call @staticmethod`），
+- `unreal/Content/Python/init_unreal.py` 用 `Registration([BasicSpawnTools]).register()`。
+- 启动后日志应含 `Registering Toolset basic_spawn.basic_spawn_tools.BasicSpawnTools`。
+
+**3) orchestrator 真引擎会话命令**：
+- `python -m orchestrator ue-p0`            # 发现 BasicSpawn → place→list→remove（AC-P0-06 证据）
+- `python -m orchestrator ue-p0 --discover` # 仅发现工具/能力
+- `python -m orchestrator ue-run --skill ue_basicspawn_smoke`  # host.run 经 UeMcpBackend 真调 UE（走 Skill）
+- 参考实现：`orchestrator/ue_mcp.py`（会话 client）、`orchestrator/ue_backend.py`（与 host.McpClient 同形的 UE 后端）。
+
+**4) 典型踩坑/要点**：编辑器-MCP 服务默认 **不** auto 监听（需 `-ModelContextProtocolStartServer`，否则 8000 不 LISTEN）；
+`tools/list list`/完整工具经会话 `Mcp-Session-Id` header；Skill 步骤 tool 名映射到 UE 工具用 `UeMcpBackend` 的动态 `/describe` 能力面解析，
+本地/分析类 tool 无对应时返回明确 unsupported 而非伪装。
 
 ---
 

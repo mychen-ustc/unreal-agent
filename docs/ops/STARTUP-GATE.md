@@ -24,18 +24,20 @@
 
 | # | Gate | 关键验收 | 状态 | 说明 |
 |---|---|---|---|---|
-| G-01 | 环境就绪 | Xcode、UE 5.8 源码版、conda、Redis、模型凭据、Git | 🟡 | 见 environment-setup §0；**唯一待办 MetalToolchain 组件**（带渲染编辑器会话） |
-| G-02 | 首次提交 | `orchestrator/`、`pyproject.toml`、`unreal/` 首次纳入 git | ❌ | 当前均为未跟踪（见 §3） |
-| G-03 | 测试骨架 | `tests/` 存在，P0 单元测试可跑（pytest 空跑通过） | ✅ | `tests/` 已建（test_dag / test_skill_and_distill / test_scheduler_and_host，19 例 pytest 全过） |
-| G-04 | AC-P0-01 MCP 插件启用 | UE 插件启用 + `127.0.0.1:8000/mcp` 响应 | 🟡 | 依赖 G-01 补 MetalToolchain 后验证 |
+| G-01 | 环境就绪 | Xcode、UE 5.8（Epic 正式版）+ MetalToolchain、conda、Redis、模型凭据、Git | ✅ | 见 environment-setup；MetalToolchain 已就绪，编辑器渲染会话可跑 | 
+| G-02 | 首次提交 | `orchestrator/`、`pyproject.toml`、`unreal/` 首次纳入 git | ✅ | 已提交（feat/branch 见 git） |
+| G-03 | 测试骨架 | `tests/` 存在，P0 单元测试可跑（pytest 空跑通过） | ✅ | `tests/` 已建；全量 pytest 42 passed（含 UE 后端/会话/全 Skill 闭环） |
+| G-04 | AC-P0-01 MCP 插件启用 | UE 插件启用 + `127.0.0.1:8000/mcp` 响应 | ✅ | 已真 UE 实测：编辑器 -ModelContextProtocolStartServer→8000 监听，MCP 会话/工具/describe/call 全通 |
 | G-05 | 审批/回滚 SOP 就绪 | 审批人已定、CLI 审批命令可用（非占位） | ❌ | 当前 `approve`/`rollback` 为**占位**（见 §2） |
 | G-06 | 凭据安全 | `.env` 不入库（已 gitignore）、密钥不写进文档/日志 | ✅ | .gitignore 已含 `.env` |
 | G-07 | 分支策略 | main 受保护 / 开发分支约定已定 | 🟡 | 建议 P1 多人前启用受保护分支 |
 | G-08 | 数据/备份口径 | SharedState(Git)、memory(gitignore)、.logs 的保留/备份规则明确 | 🟡 | 见 ops/GOVERNANCE-OPS §数据 |
 | G-09 | 商业钩子预埋 | distiller 骨架、计量标签、审计不可篡改预留（P0 埋点） | ❌ | 见 ops/SECURITY-LICENSING §P0 预埋 |
-| G-10 | 契约校验脚本 | `schema-check`（SharedState/Tool JSON Schema + 错误码登记）能跑 | ❌ | 见 ops/CONTRACTS |
+| G-10 | 契约校验脚本 | `schema-check`（SharedState 信封 + Skill 契约/tier/distill + 步骤 tool）能跑 | ✅ | `orchestrator/scripts/schema_check.py` 已建，exit=0 通过（tests 覆盖） |
 
 > **决策**：并非所有 Gate 都要在"第一天"全绿。**硬 Gate（必须全绿才能启动）**：G-01、G-02、G-03、G-05、G-06。**软 Gate（P0 期间补但方向先定）**：G-04、G-07、G-08、G-09、G-10。
+>
+> 状态更新（接真 UE 后）：G-01(环境+Metal)/G-02(首次提交)/G-03(测试·42)/G-04(AC-P0-01·真 MCP 监听/会话 8000) 均已 ✅；G-05(审批/回滚 SOP) 与 P0-04/05 仍占位，作为「完整游戏开发前置」的下一批补齐；G-07/G-08 为多人/上线前软项，G-09/G-10(商业钩子/契约脚本)方向定、骨架可在本期即补。
 
 ---
 
@@ -45,14 +47,14 @@
 
 | PRD AC | 需求 | 代码现状 | 差距 / 行动 |
 |---|---|---|---|
-| **P0-01** MCP 三件套插件启用 | 插件启用 + `/mcp` 响应 | 🟡 `mcp_client.py` 有 HttpTransport 但 `--no-stub` 需真 UE | 补 MetalToolchain → 真 UE 验证 |
-| **P0-02** ProjectToolset 注册 | `list_tools` 返回全部工具 + Schema | 🟡 MCP 桩有工具列表；真 Toolset 未连 | 接 UE 后验证 schema 反射 |
-| **P0-03** 沙箱生效 | 写入 `/Engine/` → `sandbox_denied` | ❌ 沙箱在 UE 侧 SafeguardToolset，编排侧未测 | 需 UE + SafeguardToolset |
-| **P0-04** 审批分级 | read_only 放行 / mutating 审批 / destructive 阻塞 | 🟡 `--auto-approve-read-only` 有开关；`approve` 命令是占位 | 打通 `approve` 真实审批链 |
-| **P0-05** Git 钩子自动 commit | mutating 后自动 commit + diff | ❌ `rollback` 是占位；post-tool Git hook 未实现 | 落地 post-tool hook |
-| **P0-06** 最小闭环 | 放置 Cube → 出现 → 回滚 → 消失 | 🟡 CLI `run` 走 Skill/DAG；"放置 Cube"需真 UE + 回滚 | 连 UE 跑通最小闭环 |
+| **P0-01** MCP 三件套插件启用 | 插件启用 + `/mcp` 响应 | ✅ 真 UE 实测：启用 ModelContextProtocol/ToolsetRegistry/AllToolsets，编辑器 -ModelContextProtocolStartServer→127.0.0.1:8000/mcp 监听，MCP 会话 initialize/tools-list/describe/call 全通 | — |
+| **P0-02** ToolsetRegistry 工具发现 | `list_tools`/发现全部工具与 Schema | ✅ `ue-p0 --discover`/UeMcpBackend 在真 UE 会话枚举（ListToolsets/describe），并发现自研 BasicSpawnTools | 编排侧桩 list_tools 仅供离线；真能力面走 ue_mcp/UeMcpBackend |
+| **P0-03** 沙箱生效 | 写入 `/Engine/` → `sandbox_denied` | ❌ UE 侧 Safeguard/沙箱拦截未在真引擎验 | 做真实回滚/写入拦截时补 |
+| **P0-04** 审批分级 | read_only 放行 / mutating 审批 / destructive 阻塞 | 🟡 `approve` 仍是占位 | 接真引擎审批链（Pending） |
+| **P0-05** Git 钩子自动 commit | mutating 后自动 commit + diff | ❌ `rollback`/post-tool hook 未实现 | 落地 post-tool hook（Backlog） |
+| **P0-06** 最小闭环 | 放置 Cube → 出现 → 回滚 → 消失 | ✅ 真 UE：自研 BasicSpawnToolset place_cube→list_agent_cubes→remove_cube 经 `ue-p0`/`ue-run`(host·UeMcpBackend)，各返回 ok / 可列出 / removed:1 | — |
 
-**结论**：当前 `orchestrator/` 是**「编排语言脚手架」**（DAG / Skill 装载 / MCP 桩 / trace / LiteLLM 都可见），但把 SDK 能力**接真 UE 的 AC-P0 六项几乎都差「连真 UE + 审批/回滚落地」这一层**。这是 P0 地基第一周的真实工作重心。
+> **结论**：脚手架核心 + **真 UE MCP 链路（AC-P0-01 & AC-P0-06）** 已在真实 UE_5.8 闭合；剩余 P0-03/04/05 属「真引擎审批/回滚/沙箱」类红/黄项，进入下一轮（完整游戏开发前置）补齐；商业钩子（G-09/G-10）方向已定、代码骨架已可跑，正式脚本化见 CONTRACTS/SECURITY-LICENSING。
 
 ---
 

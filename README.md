@@ -84,9 +84,10 @@ python -m orchestrator demo-concept --direction "探索驱动、收集符文开�
 # 模型路由实测（需 .env）：python -c "import asyncio; from orchestrator.models import get_router; print(asyncio.run(get_router().complete('hi', tier='fast')))"
 ```
 
-**已实现（实测自检通过）**：模型路由（DeepSeek 连通）、DAG/拓扑/stale/回退、Skill 装载 + **Scheduler 按依赖驱动步骤**、Skill 商业分级（tier/distill）、**LLM/Skill 选型（失败回退关键词）**、**distiller 能力蒸馏（tier<=2）**、**importers 跨宿主导入（claude_code + self_hosted）**、**MCP Toolset Registry（12 自研 Toolset + 内容分析类，32 工具桩态可调）**、Skill 步骤->Tool 真实映射执行 + 审批门（approval=prompt|auto|read_only）、**33 个领域/评估 Skill 全量端到端闭环自检**、SQLite Durable、SharedState 信封、CLI + trace。
+**已实现（实测自检通过）**：模型路由（DeepSeek 连通）、DAG/拓扑/stale/回退、Skill 装载 + **Scheduler 按依赖驱动步骤**、Skill 商业分级（tier/distill）、**LLM/Skill 选型（失败回退关键词）**、**distiller 能力蒸馏（tier<=2）**、**importers 跨宿主导入（claude_code + self_hosted）**、**MCP Toolset Registry（12 自研 Toolset + 内容分析类，32 工具桩态可调）**、Skill 步骤->Tool 真实映射执行 + 审批门、**33 个领域/评估 Skill 全量端到端闭环自检**、SQLite Durable、SharedState 信封、CLI + trace、**真 UE5.8 MCP 会话已跑通：AC-P0-01（插件+8000+initialize/session/tools/call）与 AC-P0-06（自研 BasicSpawnToolset place→list→remove）**、**host→UeMcpBackend 真调用（ue-run）**。
 **已建 Skill（33/33）**：策略组 `s1_market_research`~`s6_creative_direction` / 预生产 `director`·`concept_artist`·`level_designer`·`narrative_writer`·`data_pipeline`·`system_designer` / 生产 `scenes_pcg`·`lighting_setup`·`audio_setup`·`ui_setup`·`asset_retriever`·`asset3d_generator`·`gameplay_dev`·`technical_artist`·`player_character_design`·`enemy_boss_design`·`animation_design` / 验证 `profiler_skill`·`qa_smoke`·`build_agent` / 评估 `eval_*`×6 + `playtest_researcher`——均含 Common Spec（skill.yaml 商业 tier/distill + steps.yaml 工具映射 + prompt.md），全部可被 host 装载执行并跑端到端闭环。
-**待后续**：连真 UE 的 MCP（`--no-stub` + `--endpoint`）、LanceDB 真实检索、importers 补 codex/openclaw/hermes 宿主格式。说明：全部 33 个 Skill 的 prompt.md 已细化为领域质量中文 prompt（统一结构：角色/职责上下文/输入/做法质量准则（或评估审计的用户立场批判+报告强 schema）/工具与风险/产出落点/验证与 AC 边界），供第三方宿主注入与 debug 使用。
+**真引擎命令**（需编辑器在线）：`python -m orchestrator ue-p0`（AC-P0-06 place→list→remove）；`ue-run --skill ue_basicspawn_smoke`（host→UeMcpBackend 真调 UE）；详见 docs/ops/UE-ENGINE-WORKFLOW §3.1。
+**待后续（完整游戏开发前置）**：真引擎审批/回滚/沙箱（AC-P0-03/04/05）、LanceDB 真实检索、importers 补 codex/openclaw/hermes。说明：全部 33 个 Skill 的 prompt.md 已细化为领域质量中文 prompt，供第三方宿主注入与 debug 使用。
 
 ---
 

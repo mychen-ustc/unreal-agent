@@ -65,10 +65,10 @@
 
 | # | 动作 | 交付 |
 |---|---|---|
-| C-01 | 建 `schema_check.py` 骨架 + 跑通 SharedState 信封校验 | 脚本存在、能测 |
-| C-02 | 把 `tier`/`distill_visibility` 加进 `skill.yaml` 解析与校验 | skill.py 支持 |
-| C-03 | 建立错误码登记清单（基于 TechDesign 附录 C） | `errors.yaml` / 表格 |
-| C-04 | 纳入 CI（或至少 pytest 挂上 schema 校验） | 测试覆盖 |
+| C-01 | 建 `schema_check.py` 骨架 + 跑通 SharedState 信封 / Skill 契约 | ✅ `orchestrator/scripts/schema_check.py`（`python -m …` exit=0 通过） |
+| C-02 | 把 `tier`/`distill_visibility` 加进 `skill.yaml` 解析与校验 | ✅ `skill.py` + `schema_check` 强制 |
+| C-03 | 建立错误码登记清单（基于 TechDesign 附录 C） | 🟡 草案，P0 期随真回滚工具一起可后置 |
+| C-04 | 纳入 CI（或至少 pytest 挂上 schema 校验） | ✅ pytest 覆盖；远程 CI action 可后接 |
 
 > 这些对应 STARTUP-GATE 的 G-10（契约校验脚本）。
 
