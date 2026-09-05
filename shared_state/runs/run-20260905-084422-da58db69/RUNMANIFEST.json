@@ -1,0 +1,38 @@
+{
+  "run_id": "run-20260905-084422-da58db69",
+  "direction": "半开放的海洋-灯塔动作冒险：在文明的光被影潮吞没百年的废海，身为被灯塔放逐的灯夫潜入废城与海床，收集记着旧文明的灯语，逐塔点亮以改变潮汐与机关来打开下一个水域；敌人是畏光集群的影带怪，核心机制是控光（灯=武器+盾+导航）。",
+  "created_at": "2026-09-05T08:47:00.177205+00:00",
+  "stages": [
+    {
+      "name": "market",
+      "producer": "s1_market_research",
+      "path": "runs/run-20260905-084422-da58db69/strategy/market"
+    },
+    {
+      "name": "competitor",
+      "producer": "s2_competitive_intel",
+      "path": "runs/run-20260905-084422-da58db69/strategy/competitor"
+    },
+    {
+      "name": "game_design",
+      "producer": "s3_game_design",
+      "path": "runs/run-20260905-084422-da58db69/strategy/game_design"
+    },
+    {
+      "name": "creative_direction",
+      "producer": "s6_creative_direction",
+      "path": "runs/run-20260905-084422-da58db69/strategy/creative_direction"
+    },
+    {
+      "name": "proposal",
+      "producer": "director",
+      "path": "runs/run-20260905-084422-da58db69/strategy/proposal"
+    },
+    {
+      "name": "eval_benchmark",
+      "producer": "eval_benchmark",
+      "path": "runs/run-20260905-084422-da58db69/eval/benchmark"
+    }
+  ],
+  "active": true
+}
