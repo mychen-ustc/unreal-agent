@@ -89,6 +89,8 @@ python -m orchestrator demo-concept --direction "探索驱动、收集符文开�
 **真引擎命令**（需编辑器在线）：`python -m orchestrator ue-p0`（AC-P0-06 place→list→remove）；`ue-run --skill ue_basicspawn_smoke`（host→UeMcpBackend 真调 UE）；详见 docs/ops/UE-ENGINE-WORKFLOW §3.1。
 **待后续（完整游戏开发前置）**：真引擎审批/回滚/沙箱（AC-P0-03/04/05）、LanceDB 真实检索、importers 补 codex/openclaw/hermes。说明：全部 33 个 Skill 的 prompt.md 已细化为领域质量中文 prompt，供第三方宿主注入与 debug 使用。
 
+**已采纳概念（立项）**：《废海灯语》TidalLight（海洋-灯塔·光控解谜动作冒险）→ [docs/concepts/tidal-light.md](./docs/concepts/tidal-light.md)；ACTIVE run `run-20260905-084422-da58db69`。
+
 ---
 
 ## 文档规范
