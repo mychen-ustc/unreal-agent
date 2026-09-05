@@ -62,8 +62,8 @@ def check_shared_state() -> None:
     if not SHARED.exists():
         return
     for p in SHARED.rglob("*.json"):
-        # 排除非信封元文件（run manifest 等）
-        if p.name == "RUNMANIFEST.json":
+        # 排除非信封元文件（run manifest / production manifest 等）
+        if p.name in {"RUNMANIFEST.json", "MANIFEST.json"}:
             continue
         try:
             d = json.loads(p.read_text(encoding="utf-8"))

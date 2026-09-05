@@ -292,6 +292,39 @@ def ue_run(
     console.print(f"[green]步骤执行={res.get('steps_executed')}/{len(res.get('steps',[]))}；真 UE MCP 调用已产生（见 UE 编辑器）。[/]")
 
 
+@app.command("ue-produce")
+def ue_produce(
+    clean: bool = typer.Option(False, "--clean", help="清除此前 ACTIVE 灰盒占位（不动策略）"),
+    endpoint: str = typer.Option("http://127.0.0.1:8000/mcp", "--endpoint"),
+) -> None:
+    """把当前 ACTIVE 提案接进真 UE 生产（灰盒 step）：读 ACTIVE → 批量放置 prod:// 占位→落 ledger。
+
+    编辑器需在线（-ModelContextProtocolStartServer）。默认保留占位以覆盖真实资产；--clean 清除本 run 占位。
+    """
+    from orchestrator.production_start import load_active_proposal_text, produce
+    from orchestrator.ue_backend import UeMcpBackend
+
+    try:
+        _, rid = load_active_proposal_text()
+    except RuntimeError as exc:
+        console.print(f"[red]{exc}[/]")
+        return
+    console.print(f"ACTIVE run: {rid} —— 接真 UE 生产（灰盒）")
+    backend = UeMcpBackend(endpoint=endpoint)
+    if not backend.ue.ensure_session():
+        console.print("[red]真 UE 后端不可用（先启动编辑器 -ModelContextProtocolStartServer）[/]")
+        return
+    console.print(f"UE 会话 OK，工具面 {len(backend._cap)} 个 toolset。")
+    summary = produce(backend, clean=clean)
+    verb = "清除" if clean else "放置"
+    n = summary.get("cleaned") or summary.get("spawned")
+    console.print(f"{verb} {n} 个 prod:// 占位（run {rid}）")
+    ledger = "/".join(["shared_state", "production", rid, "MANIFEST.json"])
+    console.print("ledger: " + ledger)
+    if not clean:
+        console.print("提示：灰盒占位保留以覆盖真实资产；覆盖到真实资产前可用 --clean 重置")
+
+
 @app.command("approve")
 def approve(
     task_id: str = typer.Option(..., "--task-id"),

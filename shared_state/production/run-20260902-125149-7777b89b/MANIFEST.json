@@ -1,0 +1,87 @@
+{
+  "run_id": "run-20260902-125149-7777b89b",
+  "generated_at": "2026-09-05T08:33:55.788510+00:00",
+  "prefix": "prod",
+  "mode": "greybox",
+  "actors": [
+    {
+      "label": "prod_entrance_room",
+      "x": 0,
+      "y": 0,
+      "z": 50,
+      "ok": true
+    },
+    {
+      "label": "prod_wall_a",
+      "x": 0,
+      "y": -200,
+      "z": 150,
+      "ok": true
+    },
+    {
+      "label": "prod_wall_b",
+      "x": 0,
+      "y": 200,
+      "z": 150,
+      "ok": true
+    },
+    {
+      "label": "prod_rune_01",
+      "x": -400,
+      "y": 0,
+      "z": 50,
+      "ok": true
+    },
+    {
+      "label": "prod_rune_02",
+      "x": -400,
+      "y": 200,
+      "z": 50,
+      "ok": true
+    },
+    {
+      "label": "prod_gate_frame_l",
+      "x": 800,
+      "y": -120,
+      "z": 150,
+      "ok": true
+    },
+    {
+      "label": "prod_gate_frame_r",
+      "x": 800,
+      "y": 120,
+      "z": 150,
+      "ok": true
+    },
+    {
+      "label": "prod_activation_platform",
+      "x": 800,
+      "y": 0,
+      "z": 45,
+      "ok": true
+    },
+    {
+      "label": "prod_next_zone_gate",
+      "x": 1400,
+      "y": 0,
+      "z": 150,
+      "ok": true
+    },
+    {
+      "label": "prod_enemy_spawn_a",
+      "x": 400,
+      "y": 300,
+      "z": 50,
+      "ok": true
+    },
+    {
+      "label": "prod_enemy_spawn_b",
+      "x": 600,
+      "y": -300,
+      "z": 50,
+      "ok": true
+    }
+  ],
+  "spawn_ok_count": 11,
+  "cleaned": 0
+}
