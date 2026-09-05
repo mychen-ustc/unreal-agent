@@ -325,6 +325,25 @@ def ue_produce(
         console.print("提示：灰盒占位保留以覆盖真实资产；覆盖到真实资产前可用 --clean 重置")
 
 
+@app.command("preprod")
+def preprod(
+    dry_run: bool = typer.Option(False, "--dry", help="只生成不落盘（预览）"),
+) -> None:
+    """为当前 ACTIVE 立项产出预生产设定（风格/叙事/数值基线），落 shared_state/preproduction/<run>/。"""
+    from orchestrator.preproduction import run as run_preprod
+
+    res = run_preprod(persist=not dry_run)
+    payloads = res.get("payloads", {})
+    envs = res.get("envelopes", {})
+    console.print(Panel(
+        f"[bold]已生成 3 块预生产设定[/]：style_guide / narrative / system_baseline\n"
+        f"落盘：shared_state/preproduction/<ACTIVE run>/\nenvelope 数 {len(envs)}\n"
+        + "\n".join(f"· {k}: {(v.get('identity') if k=='style_guide' and isinstance(v,dict) else '')}"
+                    for k, v in payloads.items()),
+        title="PreProduction",
+    ))
+
+
 @app.command("approve")
 def approve(
     task_id: str = typer.Option(..., "--task-id"),
