@@ -62,14 +62,15 @@ def check_shared_state() -> None:
     if not SHARED.exists():
         return
     for p in SHARED.rglob("*.json"):
-        # 排除非信封元文件（run manifest / production manifest 等）
-        if p.name in {"RUNMANIFEST.json", "MANIFEST.json"}:
-            continue
         try:
             d = json.loads(p.read_text(encoding="utf-8"))
         except Exception as exc:  # noqa: BLE001
             _err(f"{p.relative_to(REPO)}: json 解析失败 {exc}")
             continue
+        # 非信封元文件豁免：run/production manifest、C-l 类灰度 ledger（含 "mode"/run_id，通常缺 producer）
+        if "producer" not in d:
+            if d.get("mode") or p.name == "RUNMANIFEST.json":
+                continue
         for f in ("schema_version", "parent_hash", "producer"):
             if f not in d:
                 _err(f"{p.relative_to(REPO)}: 缺 {f}")

@@ -1,0 +1,47 @@
+{
+  "mode": "tidal-light-C1-greybox",
+  "rid": "run-20260905-084422-da58db69",
+  "placed_ok": 10,
+  "beats": [
+    {
+      "label": "tl_suika_entrance",
+      "note": "入口·浮冢滩(陆)"
+    },
+    {
+      "label": "tl_light_teach",
+      "note": "光域教学·灯塔岸坡"
+    },
+    {
+      "label": "tl_corridor_m",
+      "note": "走廊·浸水石廊"
+    },
+    {
+      "label": "tl_spawn_combat1",
+      "note": "影带怪遭遇A·水泊"
+    },
+    {
+      "label": "tl_gate_jam",
+      "note": "光闸门·双光点"
+    },
+    {
+      "label": "tl_spawn_combat2",
+      "note": "影带怪遭遇B·湿梯"
+    },
+    {
+      "label": "tl_tower_base",
+      "note": "塔基·灯井台(可点亮)"
+    },
+    {
+      "label": "tl_tower_mid",
+      "note": "塔腰·碎透镜弦梯"
+    },
+    {
+      "label": "tl_final_combat",
+      "note": "塔顶战·三影潮涌"
+    },
+    {
+      "label": "tl_lantern_relight",
+      "note": "点塔收束·主菲涅尔"
+    }
+  ]
+}
