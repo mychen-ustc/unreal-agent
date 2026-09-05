@@ -90,6 +90,7 @@ python -m orchestrator demo-concept --direction "探索驱动、收集符文开�
 **待后续（完整游戏开发前置）**：真引擎审批/回滚/沙箱（AC-P0-03/04/05）、LanceDB 真实检索、importers 补 codex/openclaw/hermes。说明：全部 33 个 Skill 的 prompt.md 已细化为领域质量中文 prompt，供第三方宿主注入与 debug 使用。
 
 **已采纳概念（立项）**：《废海灯语》TidalLight（海洋-灯塔·光控解谜动作冒险）→ [docs/concepts/tidal-light.md](./docs/concepts/tidal-light.md)；ACTIVE run `run-20260905-084422-da58db69`。
+**垂直切片 GDD（可执行策划交付）**：「沉塔-灯塔」目标/范围/First-hour验收/节拍/分工/里程碑 → [docs/gdd/tidal-light-vertical-slice.md](./docs/gdd/tidal-light-vertical-slice.md)。
 
 ---
 
