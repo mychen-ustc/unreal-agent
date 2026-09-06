@@ -69,3 +69,6 @@
 本文件的策划语义由工具链 `docs/concepts/tidal-light.md` 建立；后续以导演(director Skill)把本节拆给预生产/生产 Skill 作为任务书。产出仍为 AI 生成草案，需人工创作/确认。
 
 （提示：拟以本切片与既有 toolchain 的 execution（ue-produce/ue-run/skill 链）联动，把竖直“能玩的小段”build 起来。）
+
+
+> **阶段3·现态**：引擎内 `TidalLightPlayTools.play_state` 已能在真 Demo 读出 gate_ready/gate_width=300/enemy_count=3/entrance 等判定雏形（读取世界几何）；完整交互/手感(Actor 控制·光池·怪 AI·闸门逻辑) 仍为大玩法工程，逐步在其上实现。
