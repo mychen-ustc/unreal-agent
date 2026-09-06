@@ -44,35 +44,29 @@ class WorldIOTools(unreal.ToolsetDefinition):
         """
         if not game_path.startswith("/Game"):
             return _json(False, error="game_path 必须以 /Game 开头")
-        disc = None
-        # 1) EditorLevelLibrary.save_current_level 候选（传入路径应带 .umap* 或包路径自动扩展）
-        try:
-            el = unreal.EditorLevelLibrary
-            if hasattr(el, "save_current_level"):
-                disc = el.save_current_level(game_path)
-        except Exception as exc:  # noqa: BLE001
-            pass  # 候选不存在/失败，看下一个
-        if disc is None:
-            # 2) LevelEditorSubsystem（若提供 save_current_level / save_level）
+        el = unreal.EditorLevelLibrary
+        notes = []
+        for cand in (game_path, game_path + ".umap"):
             try:
-                sub = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
-                if sub is not None:
-                    if hasattr(sub, "save_current_level"):
-                        disc = sub.save_current_level(game_path)
-                    elif hasattr(sub, "save_level"):
-                        disc = sub.save_level(game_path)
+                if not hasattr(el, "save_current_level"):
+                    notes.append("no attr save_current_level")
+                    break
+                r = el.save_current_level(cand)
+                notes.append(f"path={cand} ret={r!r}")
+                # UE 若返回 None/False 无法确认，继续尝试下个；True则成功
+                if bool(r):
+                    return _json(True, asset=cand)
             except Exception as exc:  # noqa: BLE001
-                pass
-        if disc:
-            return _json(True, asset=game_path, crc=disc if isinstance(disc, str) else "")
-        # 探查候选（利于下一步适配）
-        methods = []
-        for obj in (getattr(unreal, "EditorLevelLibrary", None),
-                    getattr(unreal, "LevelEditorSubsystem", None)):
-            if obj is None:
-                continue
-            methods += [m for m in dir(obj) if "save" in m.lower() or "level" in m.lower()]
-        return _json(False, error="未找到可用保存方法", candidates=methods)
+                notes.append(f"path={cand} EXC {type(exc).__name__}: {exc}")
+        # 兜底：保存所有 dirty level（可能包括当前）
+        try:
+            dirty = el.save_all_dirty_levels()
+            if bool(dirty):
+                return _json(True, asset=game_path, via="save_all_dirty_levels")
+            notes.append(f"save_all_dirty_levels returned {dirty!r}")
+        except Exception as exc:  # noqa: BLE001
+            notes.append(f"save_all_dirty EXC {type(exc).__name__}: {exc}")
+        return _json(False, error="; ".join(notes) or "未知", candidates=[m for m in dir(el) if "save" in m.lower()])
 
     @toolset_registry.tool_call
     @staticmethod
